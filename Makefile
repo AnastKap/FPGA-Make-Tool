@@ -60,13 +60,15 @@ prebuild: check-vitis
 	@-$(RMDIR) $(KERNEL_LOG_FOLDER)/*
 	@mkdir -p $(KERNEL_TEMP_DIR)
 	@mkdir -p $(KERNEL_OUT_FOLDER)
-	@mkdir -p $(KERNEL_OUT_FOLDER)/sw_emu
-	@mkdir -p $(KERNEL_OUT_FOLDER)/hw_emu
-	@mkdir -p $(KERNEL_OUT_FOLDER)/hw
+	@mkdir -p $(KERNEL_OUT_FOLDER)/$(TARGET)
+	@mkdir -p $(KERNEL_LOG_FOLDER)
+	@mkdir -p $(KERNEL_TEMP_DIR)
 
 	@mkdir -p $(HOST_OUT_FOLDER)
 	@mkdir -p $(HOST_OBJ_FOLDER)
 	$(foreach cpp_file,$(HOST_SOURCES),$(shell mkdir -p $(HOST_OBJ_FOLDER)/$(dir $(cpp_file))))
+
+	@mkdir -p $(EMCONFIG_DIR)
 
 	$(ECHO) "\033[92m---- Building info ----\033[39m"
 	$(ECHO) "Kernel output directory: $(KERNEL_OUT_FOLDER)"
