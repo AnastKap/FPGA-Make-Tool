@@ -1,7 +1,6 @@
 .DEFAULT_GOAL=help
 
 include $(shell find . -name utils.mk)
-include ./settings.mk
 
 
 ########################## Default Definitions ##########################
@@ -92,13 +91,13 @@ prebuild_host:
 	$(ECHO) "\033[92m---- Building host ----\033[39m"
 
 .PHONY: build_host
-build_host: build_kernel prebuild_host $(HOST_OUT_FOLDER)/$(HOST_APP_NAME)
+build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_APP_NAME)
 	$(ECHO) "\033[95m---- Host built ----\033[39m"
 	@cp xrt.ini $(HOST_OUT_FOLDER)/xrt.ini
 	emconfigutil --platform $(PLATFORM) --od $(HOST_OUT_FOLDER)
 
 .PHONY: build
-build: build_host
+build: build_host build_kernel
 	@-$(RMDIR) .Xil
 
 .PHONY: xclbin
@@ -110,7 +109,7 @@ xclbin: build
 ############################## Building the kernels ##############################
 $(KERNEL_TEMP_DIR)/%.xo: $(KERNEL_SOURCE_FOLDER)/%.cpp
 	$(ECHO) "\033[92mCompiling $<...\033[39m"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(PROJECT_NAME) -I'$(<D)' --log_dir $(KERNEL_LOG_FOLDER)  -o'$@' '$<'
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS))) --log_dir $(KERNEL_LOG_FOLDER)  -o'$@' '$<'
 
 $(KERNEL_OUT_FOLDER)/$(TARGET)/$(PROJECT_NAME).xclbin: $(KERNEL_TEMP_DIR)/$(PROJECT_NAME).xo
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
@@ -143,6 +142,6 @@ clean_host:
 	-$(RMDIR) $(HOST_OUT_FOLDER)
 
 clean:
-	-$(RMDIR) build .Xil
-	-$(RMDIR) build
+	-$(RMDIR) $(BUILD_FOLDER) .Xil
+	-$(RMDIR) .Xil
 
