@@ -1,6 +1,7 @@
 ########################## User settings #######################
 BUILD_FOLDER = build/
 PROJECT_NAME = vadd
+CONFIG_FILE = vitis_build.cfg
 
 # Kernel settings
 KERNEL_SOURCE_FOLDER = src/kernel
