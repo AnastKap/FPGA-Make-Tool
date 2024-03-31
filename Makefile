@@ -112,7 +112,7 @@ xclbin: build
 ############################## Building the kernels ##############################
 $(KERNEL_TEMP_DIR)/%.xo: $(KERNEL_SOURCE_FOLDER)/%.cpp
 	$(ECHO) "\033[92mCompiling $<...\033[39m"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) $(CONFIG_FILE_FLAG) $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS))) --log_dir $(KERNEL_LOG_FOLDER)  -o'$@' '$<'
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) $(CONFIG_FILE_FLAG) $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS))) --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' '$<'
 
 $(KERNEL_OUT_FOLDER)/$(TARGET)/$(PROJECT_NAME).xclbin: $(KERNEL_TEMP_DIR)/$(PROJECT_NAME).xo
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
