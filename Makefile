@@ -8,13 +8,16 @@ include $(shell find . -name utils.mk)
 
 
 ########################## Folder & File settings ##########################
-KERNEL_OUT_FOLDER = $(BUILD_FOLDER)/$(PROJECT_NAME)/kernel
-KERNEL_TEMP_DIR = $(KERNEL_OUT_FOLDER)/$(TARGET)/temp_files
-KERNEL_LOG_FOLDER = $(KERNEL_OUT_FOLDER)/$(TARGET)/log
-KERNEL_LINK_OUTPUT := $(KERNEL_OUT_FOLDER)/$(TARGET)/$(PROJECT_NAME).xclbin
-KERNEL_PACKAGE_OUT = $(KERNEL_OUT_FOLDER)/$(TARGET)/$(PROJECT_NAME).xpkg
+KERNEL_XO_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/xo
+KERNEL_TEMP_DIR = $(KERNEL_BUILD_FOLDER)/$(TARGET)/temp_files
+KERNEL_LOG_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/log
 
-HOST_OUT_FOLDER = $(BUILD_FOLDER)/$(PROJECT_NAME)/host
+
+KERNEL_SOURCES_EXPANDED = $(wildcard $(KERNEL_SOURCES))
+KERNEL_XCLBIN = $(KERNEL_BUILD_FOLDER)/$(TARGET)/$(KERNEL_NAME).xclbin
+
+
+HOST_OUT_FOLDER = $(BUILD_FOLDER)/host
 HOST_OBJ_FOLDER = $(HOST_OUT_FOLDER)/objs
 HOST_OBJS = $(addprefix $(HOST_OBJ_FOLDER)/,$(foreach source,$(HOST_SOURCES),$(subst .cpp,.o,$(source))))
 
@@ -25,11 +28,11 @@ EMCONFIG_DIR = $(HOST_OUT_FOLDER)
 # Kernel compiler global settings
 VPP_PFLAGS := 
 VPP_FLAGS += --save-temps --temp_dir $(KERNEL_TEMP_DIR)
+VPP_FLAGS += $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS)))
 ifneq ($(TARGET), hw)
 VPP_FLAGS += -g
 endif
 VPP_LDFLAGS :=
-VPP_PFLAGS := 
 ifdef CONFIG_FILE
 CONFIG_FILE_FLAG = --config $(CONFIG_FILE)
 endif
@@ -57,25 +60,8 @@ XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
 all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
 prebuild: check-vitis
-	@mkdir -p $(BUILD_FOLDER)/$(PROJECT_NAME)
-	@mkdir -p $(KERNEL_LOG_FOLDER)
-	@-$(RMDIR) $(KERNEL_LOG_FOLDER)/*
-	@mkdir -p $(KERNEL_TEMP_DIR)
-	@mkdir -p $(KERNEL_OUT_FOLDER)
-	@mkdir -p $(KERNEL_OUT_FOLDER)/$(TARGET)
-	@mkdir -p $(KERNEL_LOG_FOLDER)
-	@mkdir -p $(KERNEL_TEMP_DIR)
 
-	@mkdir -p $(HOST_OUT_FOLDER)
-	@mkdir -p $(HOST_OBJ_FOLDER)
-	$(foreach cpp_file,$(HOST_SOURCES),$(shell mkdir -p $(HOST_OBJ_FOLDER)/$(dir $(cpp_file))))
-
-	@mkdir -p $(EMCONFIG_DIR)
-
-	$(ECHO) "\033[92m---- Building info ----\033[39m"
-	$(ECHO) "Kernel output directory: $(KERNEL_OUT_FOLDER)"
-	$(ECHO) "Host output directory: $(HOST_OUT_FOLDER)"
-	$(ECHO) "Used platform: $(PLATFORM)"
+	#@mkdir -p $(EMCONFIG_DIR)
 
 
 	$(ECHO) "\033[92m---- Tools used ----\033[39m"
@@ -83,14 +69,26 @@ prebuild: check-vitis
 
 .PHONY: prebuild_kernel
 prebuild_kernel: prebuild
+	@mkdir -p $(KERNEL_BUILD_FOLDER)
+	@mkdir -p $(KERNEL_LOG_FOLDER)
+	@mkdir -p $(KERNEL_TEMP_DIR)
+	@mkdir -p $(KERNEL_XO_FOLDER)
+
 	$(ECHO) "\033[92m---- Building kernel ----\033[39m"
+ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
+	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS)
+endif
 
 .PHONY: build_kernel
-build_kernel: prebuild_kernel $(KERNEL_OUT_FOLDER)/$(TARGET)/$(PROJECT_NAME).xclbin
+build_kernel: prebuild_kernel $(KERNEL_XCLBIN)
 	$(ECHO) "\033[95m---- Kernel built ----\033[39m"
 
 .PHONY: prebuild_host
 prebuild_host:
+	@mkdir -p $(HOST_OUT_FOLDER)
+	@mkdir -p $(HOST_OBJ_FOLDER)
+	$(foreach cpp_file,$(HOST_SOURCES),$(shell mkdir -p $(HOST_OBJ_FOLDER)/$(dir $(cpp_file))))
+	
 	$(ECHO) "\033[92m---- Building host ----\033[39m"
 
 .PHONY: build_host
@@ -110,16 +108,14 @@ xclbin: build
 
 
 ############################## Building the kernels ##############################
-$(KERNEL_TEMP_DIR)/%.xo: $(KERNEL_SOURCE_FOLDER)/%.cpp
-	$(ECHO) "\033[92mCompiling $<...\033[39m"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) $(CONFIG_FILE_FLAG) $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS))) --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' '$<'
+$(KERNEL_XO_FOLDER)/$(KERNEL_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
+	$(ECHO) "\033[92mCompiling sources: $^\033[39m"
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
+		$(CONFIG_FILE_FLAG) --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
 
-$(KERNEL_OUT_FOLDER)/$(TARGET)/$(PROJECT_NAME).xclbin: $(KERNEL_TEMP_DIR)/$(PROJECT_NAME).xo
+$(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/$(KERNEL_NAME).xo
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
-	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o'$(KERNEL_LINK_OUTPUT)' $(+)
-	$(ECHO) "\033[92mCreating package...\033[39m"
-	v++ -p $(KERNEL_LINK_OUTPUT) $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o $(KERNEL_PACKAGE_OUT)
-
+	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o '$@' $^
 
 
 
@@ -145,6 +141,6 @@ clean_host:
 	-$(RMDIR) $(HOST_OUT_FOLDER)
 
 clean:
-	-$(RMDIR) $(BUILD_FOLDER) .Xil
+	-$(RMDIR) $(KERNEL_BUILD_FOLDER)/$(TARGET) .Xil
 	-$(RMDIR) .Xil
 
