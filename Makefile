@@ -1,10 +1,12 @@
 .DEFAULT_GOAL=help
 
-include $(shell find . -name utils.mk)
 
 
 ########################## Default Definitions ##########################
+RM = rm -f
+RMDIR = rm -rf
 
+ECHO:= @echo
 
 
 ########################## Folder & File settings ##########################
@@ -13,7 +15,7 @@ KERNEL_TEMP_DIR = $(KERNEL_BUILD_FOLDER)/$(TARGET)/temp_files
 KERNEL_LOG_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/log
 
 
-KERNEL_SOURCES_EXPANDED = $(wildcard $(KERNEL_SOURCES))
+KERNEL_SOURCES_EXPANDED = $(KERNEL_SOURCES) #$(wildcard $(KERNEL_SOURCES))
 KERNEL_XCLBIN = $(KERNEL_BUILD_FOLDER)/$(TARGET)/$(KERNEL_NAME).xclbin
 
 
@@ -33,8 +35,15 @@ ifneq ($(TARGET), hw)
 VPP_FLAGS += -g
 endif
 VPP_LDFLAGS :=
+ifdef FROM_STEP
+VPP_LDFLAGS += --from_step $(FROM_STEP)
+endif
 ifdef CONFIG_FILE
 CONFIG_FILE_FLAG = --config $(CONFIG_FILE)
+VPP_FLAGS += $(CONFIG_FILE_FLAG)
+endif
+ifdef HLS_PRE_TCL
+VPP_FLAGS += --hls.pre_tcl $(HLS_PRE_TCL)
 endif
 # Host compiler global settings
 CXXFLAGS += -fmessage-length=0
@@ -59,7 +68,7 @@ XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
 .PHONY: all clean docs emconfig
 all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
-prebuild: check-vitis
+prebuild:
 
 	#@mkdir -p $(EMCONFIG_DIR)
 
@@ -111,7 +120,7 @@ xclbin: build
 $(KERNEL_XO_FOLDER)/$(KERNEL_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
 	$(ECHO) "\033[92mCompiling sources: $^\033[39m"
 	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
-		$(CONFIG_FILE_FLAG) --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
+	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
 
 $(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/$(KERNEL_NAME).xo
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"

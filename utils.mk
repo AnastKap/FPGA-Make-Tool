@@ -89,11 +89,6 @@ exe:
 	$(ECHO) "WARNING: \"make exe\" is a deprecated command. Please use \"make host\" instead"
 	make host
 
-# Cleaning stuff
-RM = rm -f
-RMDIR = rm -rf
-
-ECHO:= @echo
 
 docs: README.rst
 
