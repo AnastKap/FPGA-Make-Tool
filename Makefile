@@ -45,6 +45,9 @@ endif
 ifdef HLS_PRE_TCL
 VPP_FLAGS += --hls.pre_tcl $(HLS_PRE_TCL)
 endif
+ifdef KERNEL_FREQUENCY_MHz
+VPP_FLAGS += --kernel_frequency $(KERNEL_FREQUENCY_MHz)
+endif
 # Host compiler global settings
 CXXFLAGS += -fmessage-length=0
 LDFLAGS += -lrt -lstdc++ 
