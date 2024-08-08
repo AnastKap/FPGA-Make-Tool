@@ -28,7 +28,7 @@ EMCONFIG_DIR = $(HOST_OUT_FOLDER)
 
 ########################## Compiler & linker options ##########################
 # Kernel compiler global settings
-VPP_PFLAGS := 
+VPP_FLAGS := 
 VPP_FLAGS += --save-temps --temp_dir $(KERNEL_TEMP_DIR)
 VPP_FLAGS += $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS)))
 ifneq ($(TARGET), hw)
@@ -40,7 +40,7 @@ VPP_LDFLAGS += --from_step $(FROM_STEP)
 endif
 ifdef CONFIG_FILE
 CONFIG_FILE_FLAG = --config $(CONFIG_FILE)
-VPP_FLAGS += $(CONFIG_FILE_FLAG)
+VPP_LDFLAGS += $(CONFIG_FILE_FLAG)
 endif
 ifdef HLS_PRE_TCL
 VPP_FLAGS += --hls.pre_tcl $(HLS_PRE_TCL)
@@ -72,10 +72,6 @@ XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
 all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
 prebuild:
-
-	#@mkdir -p $(EMCONFIG_DIR)
-
-
 	$(ECHO) "\033[92m---- Tools used ----\033[39m"
 	@whereis v++
 
@@ -92,8 +88,10 @@ ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 endif
 
 .PHONY: build_kernel
-build_kernel: prebuild_kernel $(KERNEL_XCLBIN)
+build_kernel_xo: prebuild_kernel $(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo
 	$(ECHO) "\033[95m---- Kernel built ----\033[39m"
+
+build_xclbin: $(KERNEL_XCLBIN)
 
 .PHONY: prebuild_host
 prebuild_host:
@@ -120,12 +118,12 @@ xclbin: build
 
 
 ############################## Building the kernels ##############################
-$(KERNEL_XO_FOLDER)/$(KERNEL_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
+$(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
 	$(ECHO) "\033[92mCompiling sources: $^\033[39m"
 	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
 	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
 
-$(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/$(KERNEL_NAME).xo
+$(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/*.xo
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o '$@' $^
 
