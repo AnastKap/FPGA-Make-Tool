@@ -28,7 +28,7 @@ EMCONFIG_DIR = $(HOST_OUT_FOLDER)
 
 ########################## Compiler & linker options ##########################
 # Kernel compiler global settings
-VPP_FLAGS := 
+VPP_FLAGS := $(ADDITIONAL_VPP_FLAGS)
 VPP_FLAGS += --save-temps --temp_dir $(KERNEL_TEMP_DIR)
 VPP_FLAGS += $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS)))
 ifneq ($(TARGET), hw)
