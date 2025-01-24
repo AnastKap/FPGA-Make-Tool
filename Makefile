@@ -19,7 +19,7 @@ KERNEL_SOURCES_EXPANDED = $(KERNEL_SOURCES) #$(wildcard $(KERNEL_SOURCES))
 KERNEL_XCLBIN = $(KERNEL_BUILD_FOLDER)/$(TARGET)/$(KERNEL_NAME).xclbin
 
 
-HOST_OUT_FOLDER = $(BUILD_FOLDER)/host
+HOST_OUT_FOLDER = $(HOST_BUILD_FOLDER)
 HOST_OBJ_FOLDER = $(HOST_OUT_FOLDER)/objs
 HOST_OBJS = $(addprefix $(HOST_OBJ_FOLDER)/,$(foreach source,$(HOST_SOURCES),$(subst .cpp,.o,$(source))))
 
@@ -56,6 +56,7 @@ LDFLAGS += -L$(XILINX_XRT)/lib -pthread -lOpenCL
 #Include Required Host Source Files
 CXXFLAGS += $(addprefix -I,$(HOST_INCLUDE_FOLDERS))
 CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_VIVADO)/include -Wall -O0 -g -std=c++1y
+CXXFLAGS += $(ADDITIONAL_CXX_FLAGS)
 HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/cmdparser/cmdlineparser.cpp $(XF_PROJ_ROOT)/common/includes/logger/logger.cpp ./src/host.cpp
 CMD_ARGS = -x $(BUILD_DIR)/vadd.xclbin 
 
