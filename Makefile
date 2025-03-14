@@ -8,6 +8,16 @@ RMDIR = rm -rf
 
 ECHO:= @echo
 
+ifeq ($(strip $(NO_TERMINAL_COLOR)),)
+DEFAULT_COLOR := "\\033[39m"
+GREEN_COLOR := "\\033[92m"
+PINK_COLOR := "\\033[95m"
+else
+DEFAULT_COLOR := 
+GREEN_COLOR := 
+PINK_COLOR := 
+endif
+
 
 ########################## Folder & File settings ##########################
 KERNEL_XO_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/xo
@@ -17,6 +27,7 @@ KERNEL_LOG_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/log
 
 KERNEL_SOURCES_EXPANDED = $(KERNEL_SOURCES) #$(wildcard $(KERNEL_SOURCES))
 KERNEL_XCLBIN = $(KERNEL_BUILD_FOLDER)/$(TARGET)/$(KERNEL_NAME).xclbin
+
 
 
 HOST_OUT_FOLDER = $(HOST_BUILD_FOLDER)
@@ -73,7 +84,7 @@ XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
 all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
 prebuild:
-	$(ECHO) "\033[92m---- Tools used ----\033[39m"
+	$(ECHO) "$(GREEN_COLOR)---- Tools used ----$(DEFAULT_COLOR)"
 	@whereis v++
 
 .PHONY: prebuild_kernel
@@ -83,16 +94,16 @@ prebuild_kernel: prebuild
 	@mkdir -p $(KERNEL_TEMP_DIR)
 	@mkdir -p $(KERNEL_XO_FOLDER)
 
-	$(ECHO) "\033[92m---- Building kernel ----\033[39m"
+	$(ECHO) "$(GREEN_COLOR)---- Building kernel ----$(DEFAULT_COLOR)"
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS)
 endif
 
 .PHONY: build_kernel
 build_kernel_xo: prebuild_kernel $(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo
-	$(ECHO) "\033[95m---- Kernel built ----\033[39m"
+	$(ECHO) "$(GREEN_COLOR)---- Kernel built ----$(DEFAULT_COLOR)"
 
-build_xclbin: $(KERNEL_XCLBIN)
+build_xclbin: prebuild_kernel $(KERNEL_XCLBIN)
 
 .PHONY: prebuild_host
 prebuild_host:
@@ -100,13 +111,15 @@ prebuild_host:
 	@mkdir -p $(HOST_OBJ_FOLDER)
 	$(foreach cpp_file,$(HOST_SOURCES),$(shell mkdir -p $(HOST_OBJ_FOLDER)/$(dir $(cpp_file))))
 	
-	$(ECHO) "\033[92m---- Building host ----\033[39m"
+	$(ECHO) "$(GREEN_COLOR)---- Building host ----$(DEFAULT_COLOR)"
 
 .PHONY: build_host
 build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_APP_NAME)
-	$(ECHO) "\033[95m---- Host built ----\033[39m"
+	$(ECHO) "$(PINK_COLOR)---- Host built ----$(DEFAULT_COLOR)"
 	@cp xrt.ini $(HOST_OUT_FOLDER)/xrt.ini
+ifeq ($(strip $(TARGET)), hw_emu)
 	emconfigutil --platform $(PLATFORM) --od $(HOST_OUT_FOLDER)
+endif
 
 .PHONY: build
 build: build_host build_kernel
@@ -119,24 +132,26 @@ xclbin: build
 
 
 ############################## Building the kernels ##############################
-$(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
-	$(ECHO) "\033[92mCompiling sources: $^\033[39m"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
+XO_TARGETS = $(foreach kernel_top_func_name,$(KERNEL_TOP_FUNCTION_NAMES),$(KERNEL_XO_FOLDER)/$(kernel_top_func_name).xo)
+$(XO_TARGETS): $(KERNEL_SOURCES_EXPANDED)
+	$(ECHO) "$(GREEN_COLOR)Compiling sources: $^$(DEFAULT_COLOR)"
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $$(basename $@ | cut -d . -f 1) \
 	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
 
-$(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/*.xo
-	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
+.SECONDEXPANSION:
+$(KERNEL_XCLBIN): $(XO_TARGETS)
+	$(ECHO) "$(GREEN_COLOR)Linking object files to xclbin...$(DEFAULT_COLOR)"
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o '$@' $^
 
 
 
 ############################## Building the host application ##############################
 $(HOST_OBJ_FOLDER)/%.o: %.cpp
-	$(ECHO) "\033[92mCompiling $<...\033[39m"
+	$(ECHO) "$(GREEN_COLOR)Compiling $<...$(DEFAULT_COLOR)"
 	g++ -c -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
 
 $(HOST_OUT_FOLDER)/$(HOST_APP_NAME): $(HOST_OBJS)
-	$(ECHO) "\033[92mLinking object files to final host application...\033[39m"
+	$(ECHO) "$(GREEN_COLOR)Linking object files to final host application...$(DEFAULT_COLOR)"
 	g++ -o $@ $^ $(LDFLAGS)
 
 
