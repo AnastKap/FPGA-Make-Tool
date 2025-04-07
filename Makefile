@@ -56,7 +56,7 @@ LDFLAGS += -L$(XILINX_XRT)/lib -pthread -lOpenCL
 #Include Required Host Source Files
 CXXFLAGS += $(addprefix -I,$(HOST_INCLUDE_FOLDERS))
 CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_VIVADO)/include -Wall -O0 -g -std=c++1y
-CXXFLAGS += $(ADDITIONAL_CXX_FLAGS)
+CXXFLAGS += -D__HOST__ $(ADDITIONAL_CXX_FLAGS)
 HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/cmdparser/cmdlineparser.cpp $(XF_PROJ_ROOT)/common/includes/logger/logger.cpp ./src/host.cpp
 CMD_ARGS = -x $(BUILD_DIR)/vadd.xclbin 
 
@@ -101,6 +101,9 @@ prebuild_host:
 	$(foreach cpp_file,$(HOST_SOURCES),$(shell mkdir -p $(HOST_OBJ_FOLDER)/$(dir $(cpp_file))))
 	
 	$(ECHO) "\033[92m---- Building host ----\033[39m"
+ifneq ($(strip $(HOST_PREBUILD_STEPS)),)
+	make -f $(firstword $(MAKEFILE_LIST)) $(HOST_PREBUILD_STEPS)
+endif
 
 .PHONY: build_host
 build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_APP_NAME)
