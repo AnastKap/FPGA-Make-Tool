@@ -28,9 +28,9 @@ EMCONFIG_DIR = $(HOST_OUT_FOLDER)
 
 ########################## Compiler & linker options ##########################
 # Kernel compiler global settings
-VPP_FLAGS := $(ADDITIONAL_VPP_FLAGS)
+VPP_FLAGS := -R2 $(ADDITIONAL_VPP_FLAGS)
 VPP_FLAGS += --save-temps --temp_dir $(KERNEL_TEMP_DIR)
-VPP_FLAGS += $(addprefix -I,$(wildcard $(KERNEL_INCLUDE_FOLDERS)))
+VPP_FLAGS += $(addprefix -I,$(KERNEL_INCLUDE_FOLDERS) $(wildcard $(KERNEL_INCLUDE_FOLDERS)))
 ifneq ($(TARGET), hw)
 VPP_FLAGS += -g
 endif
@@ -47,6 +47,16 @@ VPP_FLAGS += --hls.pre_tcl $(HLS_PRE_TCL)
 endif
 ifdef KERNEL_FREQUENCY_MHz
 VPP_FLAGS += --kernel_frequency $(KERNEL_FREQUENCY_MHz)
+endif
+ifneq ($(strip $(KERNEL_TO_STEP_LINK)),)
+VPP_VALID_STEPS = $(shell v++ --list_steps --target hw --link | sed -n -e '3p' -e '6p' | sed 's/,/ /g' | paste -sd ' ')
+ifeq ($(filter $(KERNEL_TO_STEP_LINK),$(VPP_VALID_STEPS)),)
+$(error Makefile variable KERNEL_TO_STEP_LINK was defined but given an invalid value ($(KERNEL_TO_STEP_LINK)). Please check the list of valid steps using 'v++ --list_steps --target hw --link' command.)
+endif
+VPP_LDFLAGS += --to_step $(KERNEL_TO_STEP_LINK)
+endif
+ifneq ($(strip $(KERNEL_REUSE_IMPL_DCP)),)
+VPP_LDFLAGS += --reuse_impl $(KERNEL_REUSE_IMPL_DCP)
 endif
 # Host compiler global settings
 CXXFLAGS += -fmessage-length=0
