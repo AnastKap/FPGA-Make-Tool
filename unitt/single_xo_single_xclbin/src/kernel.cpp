@@ -34,6 +34,7 @@ void bandwidth(TYPE* __restrict__ input0,
 #endif
                int64_t num_blocks) {
 
+    main_loop:
     for (int64_t blockindex = 0; blockindex < num_blocks; blockindex++) {
 #pragma HLS LOOP_TRIPCOUNT min = c_min_size max = c_max_size
         TYPE temp0 = input0[blockindex];

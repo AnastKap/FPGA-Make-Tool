@@ -1,0 +1,30 @@
+{
+    "connectivity_options_additional":
+    [
+    ],
+    "hls_options":
+    [
+        "jobs=8"
+    ],
+    "profile_options":
+    [
+        "#trace_memory=DDR[0]",
+        "data=all:all:all"
+    ],
+    "vivado_options":
+    [
+        "synth.jobs=16",
+        "impl.jobs=16",
+        "prop=run.impl_1.STEPS.OPT_DESIGN.IS_ENABLED=true",
+        "prop=run.impl_1.STEPS.OPT_DESIGN.ARGS.DIRECTIVE=Explore",
+        "prop=run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=ExtraTimingOpt",
+        "prop=run.impl_1.STEPS.PHYS_OPT_DESIGN.IS_ENABLED=true",
+        "prop=run.impl_1.STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE=Explore",
+        "prop=run.impl_1.STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE=Explore",
+        "prop=run.impl_1.STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED=true",
+        "prop=run.impl_1.STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE=AggressiveExplore",
+        "#param=general.maxThreads=1",
+        "#param=synth.maxThreads=4 "
+    ]
+
+}

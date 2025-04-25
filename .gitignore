@@ -3,4 +3,7 @@
 *.log
 *.run_summary
 *.csv
-*.build*/
+.ipcache
+__pycache__
+.*/
+*.png

@@ -32,7 +32,7 @@ ADDITIONAL_CXX_FLAGS =
 
 
 # Define the Makefile path of the Makefile library
-MAIN_MAKEFILE_PATH ?= ../../Makefile
+MAIN_MAKEFILE_PATH ?= ../../MakefileSingleBitstream.mk
 
 include $(MAIN_MAKEFILE_PATH)
 
