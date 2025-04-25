@@ -10,6 +10,7 @@ ECHO:= @echo
 
 
 ########################## Folder & File settings ##########################
+SINGLE_BITSTREAM_BUILD_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)
 KERNEL_XO_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/xo
 KERNEL_TEMP_DIR = $(KERNEL_BUILD_FOLDER)/$(TARGET)/temp_files
 KERNEL_LOG_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/log
@@ -24,6 +25,12 @@ HOST_OBJ_FOLDER = $(HOST_OUT_FOLDER)/objs
 HOST_OBJS = $(addprefix $(HOST_OBJ_FOLDER)/,$(foreach source,$(HOST_SOURCES),$(subst .cpp,.o,$(source))))
 
 EMCONFIG_DIR = $(HOST_OUT_FOLDER)
+
+MAKEFILE_LOG_FOLDER = $(SINGLE_BITSTREAM_BUILD_FOLDER)/.makefilelogs
+
+
+################ Makefile internal settings ##############################
+XO_TARGETS = $(addsuffix .xo,$(addprefix $(KERNEL_XO_FOLDER)/,$(KERNEL_TOP_FUNCTION_NAMES)))
 
 
 ########################## Compiler & linker options ##########################
@@ -65,7 +72,7 @@ LDFLAGS += -luuid -lxrt_coreutil
 LDFLAGS += -L$(XILINX_XRT)/lib -pthread -lOpenCL
 #Include Required Host Source Files
 CXXFLAGS += $(addprefix -I,$(HOST_INCLUDE_FOLDERS))
-CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_VIVADO)/include -Wall -O0 -g -std=c++1y
+CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_HLS)/include -Wall -O0 -g -std=c++1y
 CXXFLAGS += -D__HOST__ $(ADDITIONAL_CXX_FLAGS)
 HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/cmdparser/cmdlineparser.cpp $(XF_PROJ_ROOT)/common/includes/logger/logger.cpp ./src/host.cpp
 CMD_ARGS = -x $(BUILD_DIR)/vadd.xclbin 
@@ -84,7 +91,11 @@ all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
 prebuild:
 	$(ECHO) "\033[92m---- Tools used ----\033[39m"
-	@whereis v++
+	@echo "Vitis version: $(shell v++ --version)"
+	@echo "Build folder: $(KERNEL_BUILD_FOLDER)"
+	@echo "Kernel name: $(KERNEL_NAME)"
+	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
+	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 
 .PHONY: prebuild_kernel
 prebuild_kernel: prebuild
@@ -92,17 +103,25 @@ prebuild_kernel: prebuild
 	@mkdir -p $(KERNEL_LOG_FOLDER)
 	@mkdir -p $(KERNEL_TEMP_DIR)
 	@mkdir -p $(KERNEL_XO_FOLDER)
+	@rm -rf $(MAKEFILE_LOG_FOLDER)
+	@mkdir -p $(MAKEFILE_LOG_FOLDER)
 
 	$(ECHO) "\033[92m---- Building kernel ----\033[39m"
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
+	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
+endif
+
+prebuild_xclbin:
+ifneq ($(strip $(XCLBIN_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS)
 endif
 
 .PHONY: build_kernel
+
 build_kernel_xo: prebuild_kernel $(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo
 	$(ECHO) "\033[95m---- Kernel built ----\033[39m"
 
-build_xclbin: $(KERNEL_XCLBIN)
+build_xclbin: prebuild_xclbin $(KERNEL_XCLBIN)
 
 .PHONY: prebuild_host
 prebuild_host:
@@ -132,12 +151,15 @@ xclbin: build
 
 
 ############################## Building the kernels ##############################
-$(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
-	$(ECHO) "\033[92mCompiling sources: $^\033[39m"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
-	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
+%.xo: $(KERNEL_SOURCES_EXPANDED)
+	$(eval XO_TOP_FUNC_NAME := $(shell basename $(basename $@)))
+	$(eval XO_LOG_OUTPUT := $(MAKEFILE_LOG_FOLDER)/csynth/$(XO_TOP_FUNC_NAME).log)
+	@mkdir -p $(dir $(XO_LOG_OUTPUT))
+	$(ECHO) "\033[92mCSynth for xo $@ started  at $(shell date). Makefile output at $(XO_LOG_OUTPUT)\033[39m"
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(XO_TOP_FUNC_NAME) \
+	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^ > $(XO_LOG_OUTPUT)
 
-$(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/*.xo
+$(KERNEL_XCLBIN): $(XO_TARGETS)
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o '$@' $^
 
