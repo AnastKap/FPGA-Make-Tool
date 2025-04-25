@@ -26,6 +26,12 @@ HOST_OBJS = $(addprefix $(HOST_OBJ_FOLDER)/,$(foreach source,$(HOST_SOURCES),$(s
 EMCONFIG_DIR = $(HOST_OUT_FOLDER)
 
 
+
+################ Makefile internal settings ##############################
+XO_TARGETS = $(addsuffix .xo,$(addprefix $(KERNEL_XO_FOLDER)/,$(KERNEL_TOP_FUNCTION_NAMES)))
+
+
+
 ########################## Compiler & linker options ##########################
 # Kernel compiler global settings
 VPP_FLAGS := -R2 $(ADDITIONAL_VPP_FLAGS)
@@ -132,12 +138,14 @@ xclbin: build
 
 
 ############################## Building the kernels ##############################
-$(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo: $(KERNEL_SOURCES_EXPANDED)
-	$(ECHO) "\033[92mCompiling sources: $^\033[39m"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
+%.xo: $(KERNEL_SOURCES_EXPANDED)
+	$(eval XO_TOP_FUNC_NAME := $(shell basename $(basename $@)))
+	$(ECHO) "\033[92mCSynth for xo $@ started  at $(shell date).\033[39m"
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(XO_TOP_FUNC_NAME) \
 	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^
 
-$(KERNEL_XCLBIN): $(KERNEL_XO_FOLDER)/*.xo
+
+$(KERNEL_XCLBIN): $(XO_TARGETS)
 	$(ECHO) "\033[92mLinking object files to xclbin...\033[39m"
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o '$@' $^
 

@@ -1,0 +1,6 @@
+.Xil
+*.jou
+*.log
+*.run_summary
+*.csv
+*.build*/
