@@ -1,3 +1,4 @@
+include $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST)))/MakefileCommon.mk)
 
 include $(GENERAL_SETTINGS_MAKEFILE)
 export
@@ -64,13 +65,13 @@ build_system_init:
 
 build_batch_%:
 	$(eval BATCH_ID := $(patsubst build_batch_%,%,$@))
-	@echo $(SECTION_DASHES)
-	@echo "Building batch $(BATCH_ID)"
-	@echo $(SECTION_DASHES)
+	@echo $(GREEN_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
+	@echo "$(GREEN_COLOR)Building batch $(BATCH_ID)$(DEFAULT_COLOR)"
+	@echo $(GREEN_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
 	@$(MAKE) -f $(BUILD_SYSTEM_ABS_ROOT_DIR)/MakefileParallelBitstream.mk BATCH_ID=$(BATCH_ID) -j$(PARALLEL_JOBS_IN_BATCH) build_batch_all
-	@echo $(SECTION_DASHES)
-	@echo "Batch $(BATCH_ID) built"
-	@echo $(SECTION_DASHES)
+	@echo $(PINK_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
+	@echo "$(PINK_COLOR)Batch $(BATCH_ID) built$(DEFAULT_COLOR)"
+	@echo $(PINK_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
 
 .PHONY: build_system_all
 build_system_all: build_system_init $(BATCH_TARGETS)
