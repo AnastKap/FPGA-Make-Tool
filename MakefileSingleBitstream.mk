@@ -1,6 +1,13 @@
 .DEFAULT_GOAL=help
 
-include $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST)))/MakefileCommon.mk)
+
+########################## General ##########################
+BUILD_SYSTEM_ABS_PATH = $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(BUILD_SYSTEM_ABS_PATH)/MakefileCommon.mk
+
+
+
 
 ########################## Folder & File settings ##########################
 SINGLE_BITSTREAM_BUILD_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)
@@ -153,13 +160,6 @@ xclbin: build
 
 
 ############################## Building the kernels ##############################
-%.xo: $(KERNEL_SOURCES_EXPANDED)
-	$(eval XO_TOP_FUNC_NAME := $(shell basename $(basename $@)))
-	$(eval XO_LOG_OUTPUT := $(MAKEFILE_LOG_FOLDER)/csynth/$(XO_TOP_FUNC_NAME).log)
-	@mkdir -p $(dir $(XO_LOG_OUTPUT))
-	$(ECHO) "$(GREEN_COLOR)CSynth for xo $@ started at $(shell date). Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(XO_TOP_FUNC_NAME) \
-	 --log_dir $(KERNEL_LOG_FOLDER)  -o '$@' $^ > $(XO_LOG_OUTPUT)
 
 $(KERNEL_XCLBIN): $(XO_TARGETS)
 	$(ECHO) "$(GREEN_COLOR)Linking object files to xclbin...$(DEFAULT_COLOR)"
@@ -192,3 +192,8 @@ clean:
 	-$(RMDIR) $(KERNEL_BUILD_FOLDER)/$(TARGET) .Xil
 	-$(RMDIR) .Xil
 
+
+
+########################## Include other steps ##########################
+export .
+include $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk
