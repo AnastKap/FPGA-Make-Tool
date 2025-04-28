@@ -15,8 +15,6 @@ include $(INCLUDE_XCLBIN_MAKEFILE)
 XO_TARGETS = $(wildcard $(BUILD_SYSTEM_BUILD_XO_DIR)/*.xo)
 KERNEL_XCLBIN = $(BUILD_SYSTEM_BUILD_FOLDER)/$(PROJECT_NAME).xclbin
 
-MAKEFILE_LOG_FOLDER = $(KERNEL_BUILD_FOLDER)/.makefilelogs
-
 VPP_FLAGS := -R2 $(ADDITIONAL_VPP_FLAGS)
 VPP_FLAGS += --save-temps --temp_dir $(BUILD_SYSTEM_BUILD_TEMP_DIR)
 VPP_FLAGS += $(addprefix -I,$(KERNEL_INCLUDE_FOLDERS) $(wildcard $(KERNEL_INCLUDE_FOLDERS)))
@@ -49,12 +47,17 @@ ifneq ($(strip $(KERNEL_REUSE_IMPL_DCP)),)
 VPP_LDFLAGS += --reuse_impl $(KERNEL_REUSE_IMPL_DCP)
 endif
 
+XO_LOG_OUTPUT := $(MAKEFILE_LOG_DIR)/xclbin/$(PROJECT_NAME).log
+
+.NOTPARALLEL: build_xclbin
+
 endif
 
 ###################################################
 # Run the Xclbin step
 ###################################################
 
+.PHONY: prebuild_xclbin
 prebuild_xclbin:
 	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started at $(shell date).\
 		Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
@@ -62,20 +65,22 @@ prebuild_xclbin:
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
-	@mkdir -p $(KERNEL_BUILD_FOLDER)
-	@rm -rf $(MAKEFILE_LOG_FOLDER)
-	@mkdir -p $(MAKEFILE_LOG_FOLDER)
+	@rm -rf $(XO_LOG_OUTPUT)
+	@mkdir -p $(dir $(XO_LOG_OUTPUT))
 
-	$(ECHO) "$(GREEN_COLOR)---- Building kernel ----$(DEFAULT_COLOR)"
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
 endif
 
-build_xclbin: $(KERNEL_XCLBIN)
+.PHONY: postbuild_xclbin
+postbuild_xclbin:
+	$(ECHO) "$(PINK_COLOR)---- Xclbin Built at $(KERNEL_XCLBIN) ----$(DEFAULT_COLOR)"
+
+build_xclbin: prebuild_xclbin $(KERNEL_XCLBIN) postbuild_xclbin
 
 
 ############################## Building the kernels ##############################
 
 $(KERNEL_XCLBIN): $(XO_TARGETS)
-	$(ECHO) "$(GREEN_COLOR)Linking object files to xclbin...$(DEFAULT_COLOR)"
-	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR) -o '$@' $^
+	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) \
+		--log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR) -o '$@' $^

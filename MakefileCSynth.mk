@@ -15,7 +15,6 @@ include $(INCLUDE_CSYNTH_MAKEFILE)
 KERNEL_SOURCES_EXPANDED = $(KERNEL_SOURCES) #$(wildcard $(KERNEL_SOURCES))
 KERNEL_XO_TARGET = $(addsuffix .xo,$(addprefix $(BUILD_SYSTEM_BUILD_XO_DIR)/,$(KERNEL_TOP_FUNCTION_NAME)))
 
-MAKEFILE_LOG_FOLDER = $(BUILD_SYSTEM_BUILD_FOLDER)/.makefilelogs
 
 VPP_FLAGS := -R2 $(ADDITIONAL_VPP_FLAGS)
 VPP_FLAGS += --save-temps --temp_dir $(BUILD_SYSTEM_BUILD_TEMP_DIR)
@@ -39,8 +38,9 @@ VPP_FLAGS += --kernel_frequency $(KERNEL_FREQUENCY_MHz)
 endif
 
 
-XO_TOP_FUNC_NAME := $(shell basename $(basename $(KERNEL_XO_TARGET)))
-XO_LOG_OUTPUT := $(MAKEFILE_LOG_FOLDER)/csynth/$(XO_TOP_FUNC_NAME).log
+XO_LOG_OUTPUT := $(MAKEFILE_LOG_DIR)/csynth/$(KERNEL_TOP_FUNCTION_NAME).log
+
+.NOTPARALLEL: build_csynth_single
 
 endif
 
@@ -52,6 +52,9 @@ endif
 
 CSYNTH_TARGETS = $(addsuffix .mk,$(CSYNTH_MAKEFILES))
 
+.PHONY: prebuild_csynth
+prebuild_csynth:
+
 .PHONY: prebuild_kernel
 prebuild_kernel:
 	$(ECHO) "$(GREEN_COLOR)CSynth for xo $(KERNEL_XO_TARGET) started at $(shell date). Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
@@ -59,16 +62,20 @@ prebuild_kernel:
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
-	@mkdir -p $(MAKEFILE_LOG_FOLDER)
-	@rm -rf $(dir $(XO_LOG_OUTPUT))
+	@rm -rf $(XO_LOG_OUTPUT)
 	@mkdir -p $(dir $(XO_LOG_OUTPUT))
 
-	$(ECHO) "$(GREEN_COLOR)---- Building kernel ----$(DEFAULT_COLOR)"
+	$(ECHO) "$(GREEN_COLOR)---- Building kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
 endif
 
-build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET)
+
+.PHONY: postbuild_kernel
+postbuild_kernel:
+	$(ECHO) "$(PINK_COLOR)---- Kernel Built $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
+
+build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET) postbuild_kernel
 
 
 %.mk:
@@ -76,9 +83,8 @@ build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET)
 	@$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk INCLUDE_CSYNTH_MAKEFILE=$(CSYNTH_MAKEFILE) build_csynth_single
 
 
-build_csynth_all: $(CSYNTH_TARGETS)
+build_csynth_all: prebuild_csynth $(CSYNTH_TARGETS)
 
 %.xo: $(KERNEL_SOURCES_EXPANDED)
-	$(ECHO) "$(GREEN_COLOR)CSynth for xo $@ started at $(shell date). Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(XO_TOP_FUNC_NAME) \
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
 	 --log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR)  -o '$@' $^ > $(XO_LOG_OUTPUT) 2>&1

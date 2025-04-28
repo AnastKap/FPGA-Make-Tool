@@ -16,6 +16,8 @@ BUILD_SYSTEM_BUILD_XO_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/xo
 BUILD_SYSTEM_BUILD_TEMP_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/temp_files
 BUILD_SYSTEM_BUILD_LOG_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/log
 
+MAKEFILE_LOG_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/.makefilelogs
+
 HOST_OUT_FOLDER = $(HOST_BUILD_FOLDER)
 HOST_OBJ_FOLDER = $(HOST_OUT_FOLDER)/objs
 HOST_OBJS = $(addprefix $(HOST_OBJ_FOLDER)/,$(foreach source,$(HOST_SOURCES),$(subst .cpp,.o,$(source))))
@@ -56,6 +58,7 @@ prebuild:
 	@echo "Vitis version: $(shell v++ --version)"
 	@echo "Build folder: $(BUILD_SYSTEM_BUILD_FOLDER)"
 	@mkdir -p $(BUILD_SYSTEM_BUILD_FOLDER)
+	@mkdir -p $(MAKEFILE_LOG_DIR)
 
 
 
