@@ -1,8 +1,8 @@
-.DEFAULT_GOAL=help
+.DEFAULT_GOAL=build_system_all
 
 
 ########################## General ##########################
-BUILD_SYSTEM_ABS_PATH = $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST))))
+BUILD_SYSTEM_ABS_PATH ?= $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST))))
 
 include $(BUILD_SYSTEM_ABS_PATH)/MakefileCommon.mk
 
@@ -10,16 +10,11 @@ include $(BUILD_SYSTEM_ABS_PATH)/MakefileCommon.mk
 
 
 ########################## Folder & File settings ##########################
-SINGLE_BITSTREAM_BUILD_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)
-KERNEL_XO_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/xo
-KERNEL_TEMP_DIR = $(KERNEL_BUILD_FOLDER)/$(TARGET)/temp_files
-KERNEL_LOG_FOLDER = $(KERNEL_BUILD_FOLDER)/$(TARGET)/log
+BUILD_SYSTEM_BUILD_FOLDER = $(abspath $(BUILD_FOLDER)/$(TARGET))
 
-
-KERNEL_SOURCES_EXPANDED = $(KERNEL_SOURCES) #$(wildcard $(KERNEL_SOURCES))
-KERNEL_XCLBIN = $(KERNEL_BUILD_FOLDER)/$(TARGET)/$(KERNEL_NAME).xclbin
-
-
+BUILD_SYSTEM_BUILD_XO_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/xo
+BUILD_SYSTEM_BUILD_TEMP_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/temp_files
+BUILD_SYSTEM_BUILD_LOG_DIR = $(BUILD_SYSTEM_BUILD_FOLDER)/log
 
 HOST_OUT_FOLDER = $(HOST_BUILD_FOLDER)
 HOST_OBJ_FOLDER = $(HOST_OUT_FOLDER)/objs
@@ -27,51 +22,7 @@ HOST_OBJS = $(addprefix $(HOST_OBJ_FOLDER)/,$(foreach source,$(HOST_SOURCES),$(s
 
 EMCONFIG_DIR = $(HOST_OUT_FOLDER)
 
-MAKEFILE_LOG_FOLDER = $(SINGLE_BITSTREAM_BUILD_FOLDER)/.makefilelogs
 
-
-################ Makefile internal settings ##############################
-XO_TARGETS = $(addsuffix .xo,$(addprefix $(KERNEL_XO_FOLDER)/,$(KERNEL_TOP_FUNCTION_NAMES)))
-
-
-
-################ Makefile internal settings ##############################
-XO_TARGETS = $(addsuffix .xo,$(addprefix $(KERNEL_XO_FOLDER)/,$(KERNEL_TOP_FUNCTION_NAMES)))
-
-
-
-########################## Compiler & linker options ##########################
-# Kernel compiler global settings
-VPP_FLAGS := -R2 $(ADDITIONAL_VPP_FLAGS)
-VPP_FLAGS += --save-temps --temp_dir $(KERNEL_TEMP_DIR)
-VPP_FLAGS += $(addprefix -I,$(KERNEL_INCLUDE_FOLDERS) $(wildcard $(KERNEL_INCLUDE_FOLDERS)))
-ifneq ($(TARGET), hw)
-VPP_FLAGS += -g
-endif
-VPP_LDFLAGS :=
-ifdef FROM_STEP
-VPP_LDFLAGS += --from_step $(FROM_STEP)
-endif
-ifdef CONFIG_FILE
-CONFIG_FILE_FLAG = --config $(CONFIG_FILE)
-VPP_LDFLAGS += $(CONFIG_FILE_FLAG)
-endif
-ifdef HLS_PRE_TCL
-VPP_FLAGS += --hls.pre_tcl $(HLS_PRE_TCL)
-endif
-ifdef KERNEL_FREQUENCY_MHz
-VPP_FLAGS += --kernel_frequency $(KERNEL_FREQUENCY_MHz)
-endif
-ifneq ($(strip $(KERNEL_TO_STEP_LINK)),)
-VPP_VALID_STEPS = $(shell v++ --list_steps --target hw --link | sed -n -e '3p' -e '6p' | sed 's/,/ /g' | paste -sd ' ')
-ifeq ($(filter $(KERNEL_TO_STEP_LINK),$(VPP_VALID_STEPS)),)
-$(error Makefile variable KERNEL_TO_STEP_LINK was defined but given an invalid value ($(KERNEL_TO_STEP_LINK)). Please check the list of valid steps using 'v++ --list_steps --target hw --link' command.)
-endif
-VPP_LDFLAGS += --to_step $(KERNEL_TO_STEP_LINK)
-endif
-ifneq ($(strip $(KERNEL_REUSE_IMPL_DCP)),)
-VPP_LDFLAGS += --reuse_impl $(KERNEL_REUSE_IMPL_DCP)
-endif
 # Host compiler global settings
 CXXFLAGS += -fmessage-length=0
 LDFLAGS += -lrt -lstdc++ 
@@ -91,6 +42,10 @@ PWD = $(shell readlink -f .)
 XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
 
 
+########################## Include other steps ##########################
+include $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk
+include $(BUILD_SYSTEM_ABS_PATH)/MakefileXclbin.mk
+
 
 ############################## Setting Targets ##############################
 .PHONY: all clean docs emconfig
@@ -99,24 +54,10 @@ all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 prebuild:
 	$(ECHO) "$(GREEN_COLOR)---- Tools used ----$(DEFAULT_COLOR)"
 	@echo "Vitis version: $(shell v++ --version)"
-	@echo "Build folder: $(KERNEL_BUILD_FOLDER)"
-	@echo "Kernel name: $(KERNEL_NAME)"
-	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
-	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
+	@echo "Build folder: $(BUILD_SYSTEM_BUILD_FOLDER)"
+	@mkdir -p $(BUILD_SYSTEM_BUILD_FOLDER)
 
-.PHONY: prebuild_kernel
-prebuild_kernel: prebuild
-	@mkdir -p $(KERNEL_BUILD_FOLDER)
-	@mkdir -p $(KERNEL_LOG_FOLDER)
-	@mkdir -p $(KERNEL_TEMP_DIR)
-	@mkdir -p $(KERNEL_XO_FOLDER)
-	@rm -rf $(MAKEFILE_LOG_FOLDER)
-	@mkdir -p $(MAKEFILE_LOG_FOLDER)
 
-	$(ECHO) "$(GREEN_COLOR)---- Building kernel ----$(DEFAULT_COLOR)"
-ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
-	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
-endif
 
 prebuild_xclbin:
 ifneq ($(strip $(XCLBIN_PREBUILD_STEPS)),)
@@ -125,10 +66,9 @@ endif
 
 .PHONY: build_kernel
 
-build_kernel_xo: prebuild_kernel $(KERNEL_XO_FOLDER)/$(KERNEL_TOP_FUNCTION_NAME).xo
-	$(ECHO) "$(GREEN_COLOR)---- Kernel built ----$(DEFAULT_COLOR)"
+build_kernel_xo: build_csynth_all
 
-build_xclbin: prebuild_kernel $(KERNEL_XCLBIN)
+build_xclbin: $(KERNEL_XCLBIN)
 
 .PHONY: prebuild_host
 prebuild_host:
@@ -158,15 +98,6 @@ xclbin: build
 
 
 
-
-############################## Building the kernels ##############################
-
-$(KERNEL_XCLBIN): $(XO_TARGETS)
-	$(ECHO) "$(GREEN_COLOR)Linking object files to xclbin...$(DEFAULT_COLOR)"
-	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --log_dir $(KERNEL_LOG_FOLDER) -o '$@' $^
-
-
-
 ############################## Building the host application ##############################
 $(HOST_OBJ_FOLDER)/%.o: %.cpp
 	$(ECHO) "$(GREEN_COLOR)Compiling $<...$(DEFAULT_COLOR)"
@@ -193,7 +124,8 @@ clean:
 	-$(RMDIR) .Xil
 
 
-
-########################## Include other steps ##########################
-export .
-include $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk
+############################## Run the flow ##############################
+export
+build_system_all: prebuild
+	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk build_csynth_all
+	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileXclbin.mk INCLUDE_XCLBIN_MAKEFILE=$(XCLBIN_MAKEFILE) build_xclbin
