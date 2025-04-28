@@ -47,7 +47,7 @@ ifneq ($(strip $(KERNEL_REUSE_IMPL_DCP)),)
 VPP_LDFLAGS += --reuse_impl $(KERNEL_REUSE_IMPL_DCP)
 endif
 
-XO_LOG_OUTPUT := $(MAKEFILE_LOG_DIR)/xclbin/$(PROJECT_NAME).log
+XCLBIN_LOG_OUTPUT := $(MAKEFILE_LOG_DIR)/xclbin/$(PROJECT_NAME).log
 
 .NOTPARALLEL: build_xclbin
 
@@ -59,14 +59,11 @@ endif
 
 .PHONY: prebuild_xclbin
 prebuild_xclbin:
-	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started at $(shell date).\
-		Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
-	@echo "Kernel config file: $(CONFIG_FILE)"
-	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
-	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
-	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
-	@rm -rf $(XO_LOG_OUTPUT)
-	@mkdir -p $(dir $(XO_LOG_OUTPUT))
+	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started at $(shell date). Makefile output at $(XCLBIN_LOG_OUTPUT)$(DEFAULT_COLOR)"
+	@echo "Xclbin config file: $(CONFIG_FILE)"
+	@echo "Xclbin frequency: $(KERNEL_FREQUENCY_MHz) MHz"
+	@rm -rf $(XCLBIN_LOG_OUTPUT)
+	@mkdir -p $(dir $(XCLBIN_LOG_OUTPUT))
 
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
@@ -83,4 +80,4 @@ build_xclbin: prebuild_xclbin $(KERNEL_XCLBIN) postbuild_xclbin
 
 $(KERNEL_XCLBIN): $(XO_TARGETS)
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) \
-		--log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR) -o '$@' $^
+		--log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR) -o '$@' $^ > $(XCLBIN_LOG_OUTPUT) 2>&1

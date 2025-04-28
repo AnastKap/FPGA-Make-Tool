@@ -58,6 +58,8 @@ prebuild:
 	@echo "Vitis version: $(shell v++ --version)"
 	@echo "Build folder: $(BUILD_SYSTEM_BUILD_FOLDER)"
 	@mkdir -p $(BUILD_SYSTEM_BUILD_FOLDER)
+	@mkdir -p $(BUILD_SYSTEM_BUILD_TEMP_DIR)
+	@mkdir -p $(BUILD_SYSTEM_BUILD_LOG_DIR)
 	@mkdir -p $(MAKEFILE_LOG_DIR)
 
 
@@ -130,5 +132,5 @@ clean:
 ############################## Run the flow ##############################
 export
 build_system_all: prebuild
-	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk build_csynth_all
+	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/Makefile_C_RTL_pkg.mk build_c_rtl_pkg
 	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileXclbin.mk INCLUDE_XCLBIN_MAKEFILE=$(XCLBIN_MAKEFILE) build_xclbin

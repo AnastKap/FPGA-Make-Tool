@@ -16,20 +16,10 @@ KERNEL_SOURCES_EXPANDED = $(KERNEL_SOURCES) #$(wildcard $(KERNEL_SOURCES))
 KERNEL_XO_TARGET = $(addsuffix .xo,$(addprefix $(BUILD_SYSTEM_BUILD_XO_DIR)/,$(KERNEL_TOP_FUNCTION_NAME)))
 
 
+# CSynth compiler settings
 VPP_FLAGS := -R2 $(ADDITIONAL_VPP_FLAGS)
 VPP_FLAGS += --save-temps --temp_dir $(BUILD_SYSTEM_BUILD_TEMP_DIR)
 VPP_FLAGS += $(addprefix -I,$(KERNEL_INCLUDE_FOLDERS) $(wildcard $(KERNEL_INCLUDE_FOLDERS)))
-ifneq ($(TARGET), hw)
-VPP_FLAGS += -g
-endif
-VPP_LDFLAGS :=
-ifdef FROM_STEP
-VPP_LDFLAGS += --from_step $(FROM_STEP)
-endif
-ifdef CONFIG_FILE
-CONFIG_FILE_FLAG = --config $(CONFIG_FILE)
-VPP_LDFLAGS += $(CONFIG_FILE_FLAG)
-endif
 ifdef HLS_PRE_TCL
 VPP_FLAGS += --hls.pre_tcl $(HLS_PRE_TCL)
 endif
@@ -38,7 +28,7 @@ VPP_FLAGS += --kernel_frequency $(KERNEL_FREQUENCY_MHz)
 endif
 
 
-XO_LOG_OUTPUT := $(MAKEFILE_LOG_DIR)/csynth/$(KERNEL_TOP_FUNCTION_NAME).log
+XO_LOG_OUTPUT := $(MAKEFILE_LOG_DIR)/rtl_pkg/csynth/$(KERNEL_TOP_FUNCTION_NAME).log
 
 .NOTPARALLEL: build_csynth_single
 
