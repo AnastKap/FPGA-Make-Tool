@@ -65,6 +65,8 @@ endif
 postbuild_kernel:
 	$(ECHO) "$(PINK_COLOR)---- Kernel Built $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
 
+
+.PHONY: build_csynth_single
 build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET) postbuild_kernel
 
 
@@ -73,6 +75,7 @@ build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET) postbuild_kernel
 	@$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileCSynth.mk INCLUDE_CSYNTH_MAKEFILE=$(CSYNTH_MAKEFILE) build_csynth_single
 
 
+.PHONY: build_csynth_all
 build_csynth_all: prebuild_csynth $(CSYNTH_TARGETS)
 
 %.xo: $(KERNEL_SOURCES_EXPANDED)

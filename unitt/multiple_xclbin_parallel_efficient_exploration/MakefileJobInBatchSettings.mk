@@ -29,4 +29,4 @@ build_job_user_impl:
 	@mkdir -p $(dir $(LOG_FILE))
 	@echo "Running job $(JOB_IN_BATCH_ID) in batch $(BATCH_ID) \
 		(Makefile output at $(LOG_FILE))"
-	@make -C $(CUR_DIR)/../single_xo_single_xclbin build_kernel_xo > $(LOG_FILE) 2>&1
+	@make -C $(CUR_DIR)/../single_c_single_xclbin build_kernel_xo > $(LOG_FILE) 2>&1

@@ -22,8 +22,6 @@ foreach up [ipx::get_user_parameters] {
 }
 ipx::associate_bus_interfaces -busif m_axi_gmem -clock ap_clk $core
 ipx::associate_bus_interfaces -busif s_axi_control -clock ap_clk $core
-ipx::infer_bus_interface ap_clk_2 xilinx.com:signal:clock_rtl:1.0 $core
-ipx::infer_bus_interface ap_rst_n_2 xilinx.com:signal:reset_rtl:1.0 $core
 
 set mem_map    [::ipx::add_memory_map -quiet "s_axi_control" $core]
 set addr_block [::ipx::add_address_block -quiet "reg0" $mem_map]
