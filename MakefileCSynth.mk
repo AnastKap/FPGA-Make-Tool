@@ -57,7 +57,7 @@ prebuild_kernel:
 
 	$(ECHO) "$(GREEN_COLOR)---- Building kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
-	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
+	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
 endif
 
 

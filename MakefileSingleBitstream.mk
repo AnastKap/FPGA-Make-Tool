@@ -61,6 +61,9 @@ prebuild:
 	@mkdir -p $(BUILD_SYSTEM_BUILD_TEMP_DIR)
 	@mkdir -p $(BUILD_SYSTEM_BUILD_LOG_DIR)
 	@mkdir -p $(MAKEFILE_LOG_DIR)
+ifneq ($(strip $(BUILD_SYSTEM_PREBUILD_STEPS)),)
+	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(BUILD_SYSTEM_PREBUILD_STEPS) 2>&1
+endif
 
 
 
