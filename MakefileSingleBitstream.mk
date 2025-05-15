@@ -136,4 +136,6 @@ clean:
 export
 build_system_all: prebuild
 	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/Makefile_C_RTL_pkg.mk build_c_rtl_pkg
+ifneq ($(strip $(XCLBIN_MAKEFILE)),)
 	$(MAKE) -f $(BUILD_SYSTEM_ABS_PATH)/MakefileXclbin.mk INCLUDE_XCLBIN_MAKEFILE=$(XCLBIN_MAKEFILE) build_xclbin
+endif
