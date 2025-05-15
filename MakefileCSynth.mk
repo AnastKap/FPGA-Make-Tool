@@ -52,7 +52,6 @@ prebuild_kernel:
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
-	@rm -rf $(XO_LOG_OUTPUT)
 	@mkdir -p $(dir $(XO_LOG_OUTPUT))
 
 	$(ECHO) "$(GREEN_COLOR)---- Building kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
@@ -79,5 +78,6 @@ build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET) postbuild_kernel
 build_csynth_all: prebuild_csynth $(CSYNTH_TARGETS)
 
 %.xo: $(KERNEL_SOURCES_EXPANDED)
+	@rm -rf $(XO_LOG_OUTPUT)
 	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
 	 --log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR)  -o '$@' $^ > $(XO_LOG_OUTPUT) 2>&1

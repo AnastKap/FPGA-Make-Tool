@@ -41,7 +41,6 @@ prebuild_rtl_to_xo:
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
-	@rm -rf $(XO_LOG_OUTPUT)
 	@mkdir -p $(dir $(XO_LOG_OUTPUT))
 
 	$(ECHO) "$(GREEN_COLOR)---- Packaging RTL kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
@@ -66,6 +65,7 @@ build_rtl_to_xo_all: prebuild_rtl_to_xo_all $(RTL_TO_XO_TARGETS)
 
 %.xo: $(KERNEL_SOURCES_EXPANDED)
 	$(eval XO_BASENAME := $(basename $(notdir $@)))
+	@rm -rf $(XO_LOG_OUTPUT)
 	vivado -mode batch -source $(BUILD_SYSTEM_ABS_PATH)/scripts/rtl_to_xo.tcl \
 		-tclargs $(BUILD_SYSTEM_ABS_PATH) $(BUILD_SYSTEM_BUILD_TEMP_DIR) $@ $(XO_BASE_NAME) \
 		$(IP_SETTINGS_TCL) $(KERNEL_SOURCES_EXPANDED)> $(XO_LOG_OUTPUT) 2>&1

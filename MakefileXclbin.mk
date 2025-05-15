@@ -62,7 +62,6 @@ prebuild_xclbin:
 	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started at $(shell date). Makefile output at $(XCLBIN_LOG_OUTPUT)$(DEFAULT_COLOR)"
 	@echo "Xclbin config file: $(CONFIG_FILE)"
 	@echo "Xclbin frequency: $(KERNEL_FREQUENCY_MHz) MHz"
-	@rm -rf $(XCLBIN_LOG_OUTPUT)
 	@mkdir -p $(dir $(XCLBIN_LOG_OUTPUT))
 
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
@@ -79,5 +78,6 @@ build_xclbin: prebuild_xclbin $(KERNEL_XCLBIN) postbuild_xclbin
 ############################## Building the kernels ##############################
 
 $(KERNEL_XCLBIN): $(XO_TARGETS)
+	@rm -rf $(XCLBIN_LOG_OUTPUT)
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) \
 		--log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR) -o '$@' $^ > $(XCLBIN_LOG_OUTPUT) 2>&1
