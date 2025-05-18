@@ -35,7 +35,7 @@ build_job: build_job_user_impl
 ##################################################
 ##################################################
 
-IN_BATCH_JOB_TARGETS = $(foreach i,$(shell seq 1 $(PARALLEL_JOBS_IN_BATCH)),job_in_batch_$(i))
+IN_BATCH_JOB_TARGETS = $(foreach i,$(shell seq 0 $$(($(PARALLEL_JOBS_IN_BATCH)-1))),job_in_batch_$(i))
 
 job_in_batch_%:
 	$(eval JOB_IN_BATCH_ID := $(patsubst job_in_batch_%,%,$@))
@@ -62,6 +62,9 @@ BATCH_TARGETS = $(foreach i,$(shell seq 1 $(NUMBER_OF_BATCHES)),build_batch_$(i)
 .PHONY: build_system_init
 build_system_init:
 	@rm -rf $(LOG_ROOT_FOLDER)
+ifneq ($(PRE_PARALLEL_STEP),)
+	@$(MAKE) -f $(BUILD_SYSTEM_ABS_ROOT_DIR)/MakefileParallelBitstream.mk $(PRE_PARALLEL_STEP)
+endif 
 
 build_batch_%:
 	$(eval BATCH_ID := $(patsubst build_batch_%,%,$@))
