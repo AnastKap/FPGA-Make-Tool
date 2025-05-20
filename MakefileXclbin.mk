@@ -21,7 +21,7 @@ VPP_FLAGS += $(addprefix -I,$(KERNEL_INCLUDE_FOLDERS) $(wildcard $(KERNEL_INCLUD
 ifneq ($(TARGET), hw)
 VPP_FLAGS += -g
 endif
-VPP_LDFLAGS :=
+VPP_LDFLAGS := $(ADDITIONAL_VPP_LDFLAGS)
 ifdef FROM_STEP
 VPP_LDFLAGS += --from_step $(FROM_STEP)
 endif
