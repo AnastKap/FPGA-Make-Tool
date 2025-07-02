@@ -6,8 +6,7 @@ BUILD_SYSTEM_ABS_PATH ?= $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST)))
 
 include $(BUILD_SYSTEM_ABS_PATH)/MakefileCommon.mk
 
-
-
+AR = ar
 
 ########################## Folder & File settings ##########################
 BUILD_SYSTEM_BUILD_FOLDER = $(abspath $(BUILD_FOLDER)/$(TARGET))
@@ -90,9 +89,17 @@ ifneq ($(strip $(HOST_PREBUILD_STEPS)),)
 endif
 
 .PHONY: build_host
+ifeq ($(strip $(HOST_STATIC_LIB)),0)
 build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_APP_NAME)
+else
+build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_STATIC_LIB_NAME)
+endif	
 	$(ECHO) "$(PINK_COLOR)---- Host built ----$(DEFAULT_COLOR)"
+ifeq ($(strip $(HOST_XRT_INI_PATH)),)
 	@cp xrt.ini $(HOST_OUT_FOLDER)/xrt.ini
+else
+	@cp $(HOST_XRT_INI_PATH) $(HOST_OUT_FOLDER)/xrt.ini
+endif
 ifeq ($(strip $(TARGET)), hw_emu)
 	emconfigutil --platform $(PLATFORM) --od $(HOST_OUT_FOLDER)
 endif
@@ -115,6 +122,9 @@ $(HOST_OUT_FOLDER)/$(HOST_APP_NAME): $(HOST_OBJS)
 	$(ECHO) "$(GREEN_COLOR)Linking object files to final host application...$(DEFAULT_COLOR)"
 	g++ -o $@ $^ $(LDFLAGS)
 
+$(HOST_OUT_FOLDER)/$(HOST_STATIC_LIB_NAME): $(HOST_OBJS)
+	$(ECHO) "$(GREEN_COLOR)Linking object files to final host static library...$(DEFAULT_COLOR)"
+	$(AR) rcs $@ $^
 
 
 emconfig:$(EMCONFIG_DIR)/emconfig.json
