@@ -1,0 +1,9 @@
+.Xil
+*.jou
+*.log
+*.run_summary
+*.csv
+.ipcache
+__pycache__
+.*/
+*.swp
