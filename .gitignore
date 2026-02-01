@@ -6,4 +6,4 @@
 .ipcache
 __pycache__
 .*/
-*.png
+*.swp
