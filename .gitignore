@@ -1,9 +1,50 @@
-.Xil
+# Vivado and Vitis Generated Files
+.Xil/
+.ipcache/
 *.jou
 *.log
+*.str
+*.pb
+*.wdb
+*.db
+*.zip
 *.run_summary
 *.csv
-.ipcache
-__pycache__
-.*/
+NA/
+NUL
+
+
+# Tool-Specific Generated Directories
+xo/
+log/
+temp_files/
+.makefilelogs/
+
+# Build Artifacts
+*.xclbin
+*.xo
+*.ltx
+*.xsa
+*.bit
+*.mmi
+
+# Host Compilation Artifacts
+*.o
+*.exe
+run_app.bat
+run_app.sh
+emconfig.json
+xrt.ini
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors and IDEs
+.vscode/
+.idea/
 *.swp
+
+# OS Generated Files
+.DS_Store
+Thumbs.db

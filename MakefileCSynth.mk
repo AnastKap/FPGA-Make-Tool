@@ -47,12 +47,12 @@ prebuild_csynth:
 
 .PHONY: prebuild_kernel
 prebuild_kernel:
-	$(ECHO) "$(GREEN_COLOR)CSynth for xo $(KERNEL_XO_TARGET) started at $(shell date). Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
+	$(ECHO) "$(GREEN_COLOR)CSynth for xo $(KERNEL_XO_TARGET) started. Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
 	@echo "Kernel name: $(KERNEL_TOP_FUNCTION_NAME)"
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
-	@mkdir -p $(dir $(XO_LOG_OUTPUT))
+	-@$(MKDIR) $(call FIX_PATH,$(dir $(XO_LOG_OUTPUT)))
 
 	$(ECHO) "$(GREEN_COLOR)---- Building kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
@@ -78,6 +78,6 @@ build_csynth_single: prebuild_kernel $(KERNEL_XO_TARGET) postbuild_kernel
 build_csynth_all: prebuild_csynth $(CSYNTH_TARGETS)
 
 %.xo: $(KERNEL_SOURCES_EXPANDED)
-	@rm -rf $(XO_LOG_OUTPUT)
+	-@$(RM) $(call FIX_PATH,$(XO_LOG_OUTPUT))
 	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(KERNEL_TOP_FUNCTION_NAME) \
 	 --log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR)  -o '$@' $^ > $(XO_LOG_OUTPUT) 2>&1

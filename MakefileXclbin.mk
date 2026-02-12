@@ -37,7 +37,7 @@ VPP_FLAGS += --kernel_frequency $(KERNEL_FREQUENCY_MHz)
 endif
 
 ifneq ($(strip $(KERNEL_TO_STEP_LINK)),)
-VPP_VALID_STEPS = $(shell v++ --list_steps --target hw --link | sed -n -e '3p' -e '6p' | sed 's/,/ /g' | paste -sd ' ')
+VPP_VALID_STEPS = $(shell v++ --list_steps --target hw --link 2> $(NULL) | sed -n -e '3p' -e '6p' | sed 's/,/ /g' | paste -sd ' ')
 ifeq ($(filter $(KERNEL_TO_STEP_LINK),$(VPP_VALID_STEPS)),)
 $(error Makefile variable KERNEL_TO_STEP_LINK was defined but given an invalid value ($(KERNEL_TO_STEP_LINK)). Please check the list of valid steps using 'v++ --list_steps --target hw --link' command.)
 endif
@@ -59,10 +59,10 @@ endif
 
 .PHONY: prebuild_xclbin
 prebuild_xclbin:
-	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started at $(shell date). Makefile output at $(XCLBIN_LOG_OUTPUT)$(DEFAULT_COLOR)"
+	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started. Makefile output at $(XCLBIN_LOG_OUTPUT)$(DEFAULT_COLOR)"
 	@echo "Xclbin config file: $(CONFIG_FILE)"
 	@echo "Xclbin frequency: $(KERNEL_FREQUENCY_MHz) MHz"
-	@mkdir -p $(dir $(XCLBIN_LOG_OUTPUT))
+	-@$(MKDIR) $(call FIX_PATH,$(dir $(XCLBIN_LOG_OUTPUT)))
 
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
@@ -78,6 +78,6 @@ build_xclbin: prebuild_xclbin $(KERNEL_XCLBIN) postbuild_xclbin
 ############################## Building the kernels ##############################
 
 $(KERNEL_XCLBIN): $(XO_TARGETS)
-	@rm -rf $(XCLBIN_LOG_OUTPUT)
+	-@$(RM) $(call FIX_PATH,$(XCLBIN_LOG_OUTPUT))
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) \
 		--log_dir $(BUILD_SYSTEM_BUILD_LOG_DIR) -o '$@' $^ > $(XCLBIN_LOG_OUTPUT) 2>&1

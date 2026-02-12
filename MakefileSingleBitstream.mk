@@ -2,7 +2,12 @@
 
 
 ########################## General ##########################
-BUILD_SYSTEM_ABS_PATH ?= $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST))))
+MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+CUR_DIR := $(patsubst %/,%,$(dir $(MK_PATH)))
+BUILD_SYSTEM_ABS_PATH := $(CUR_DIR)
+
+# Check Vitis Version safely
+VITIS_VERSION := $(shell v++ --version 2> $(NULL) || echo "Vitis not found")
 
 include $(BUILD_SYSTEM_ABS_PATH)/MakefileCommon.mk
 
@@ -37,10 +42,9 @@ HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/cmdparser/cmdlineparser.cpp $(XF_PR
 CMD_ARGS = -x $(BUILD_DIR)/vadd.xclbin 
 
 
-MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-COMMON_REPO ?= $(shell bash -c 'export MK_PATH=$(MK_PATH); echo $${MK_PATH%hello_world/*}')
-PWD = $(shell readlink -f .)
-XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
+COMMON_REPO ?= $(abspath $(MK_PATH)/../../..)
+PWD = $(shell cd)
+XF_PROJ_ROOT = $(COMMON_REPO)
 
 
 ########################## Include other steps ##########################
@@ -54,12 +58,12 @@ all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
 prebuild:
 	$(ECHO) "$(GREEN_COLOR)---- Tools used ----$(DEFAULT_COLOR)"
-	@echo "Vitis version: $(shell v++ --version)"
+	@echo "Vitis version: $(VITIS_VERSION)"
 	@echo "Build folder: $(BUILD_SYSTEM_BUILD_FOLDER)"
-	@mkdir -p $(BUILD_SYSTEM_BUILD_FOLDER)
-	@mkdir -p $(BUILD_SYSTEM_BUILD_TEMP_DIR)
-	@mkdir -p $(BUILD_SYSTEM_BUILD_LOG_DIR)
-	@mkdir -p $(MAKEFILE_LOG_DIR)
+	-@$(MKDIR) $(call FIX_PATH,$(BUILD_SYSTEM_BUILD_FOLDER))
+	-@$(MKDIR) $(call FIX_PATH,$(BUILD_SYSTEM_BUILD_TEMP_DIR))
+	-@$(MKDIR) $(call FIX_PATH,$(BUILD_SYSTEM_BUILD_LOG_DIR))
+	-@$(MKDIR) $(call FIX_PATH,$(MAKEFILE_LOG_DIR))
 ifneq ($(strip $(BUILD_SYSTEM_PREBUILD_STEPS)),)
 	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(BUILD_SYSTEM_PREBUILD_STEPS) 2>&1
 endif
@@ -79,9 +83,9 @@ build_xclbin: $(KERNEL_XCLBIN)
 
 .PHONY: prebuild_host
 prebuild_host:
-	@mkdir -p $(HOST_OUT_FOLDER)
-	@mkdir -p $(HOST_OBJ_FOLDER)
-	$(foreach cpp_file,$(HOST_SOURCES),$(shell mkdir -p $(HOST_OBJ_FOLDER)/$(dir $(cpp_file))))
+	-@$(MKDIR) $(call FIX_PATH,$(HOST_OUT_FOLDER))
+	-@$(MKDIR) $(call FIX_PATH,$(HOST_OBJ_FOLDER))
+	$(foreach cpp_file,$(HOST_SOURCES),$(shell $(MKDIR) $(call FIX_PATH,$(HOST_OBJ_FOLDER)/$(dir $(cpp_file)))))
 	
 	$(ECHO) "$(GREEN_COLOR)---- Building host ----$(DEFAULT_COLOR)"
 ifneq ($(strip $(HOST_PREBUILD_STEPS)),)
@@ -96,9 +100,9 @@ build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_STATIC_LIB_NAME)
 endif	
 	$(ECHO) "$(PINK_COLOR)---- Host built ----$(DEFAULT_COLOR)"
 ifeq ($(strip $(HOST_XRT_INI_PATH)),)
-	@cp xrt.ini $(HOST_OUT_FOLDER)/xrt.ini
+	@$(CP) xrt.ini $(call FIX_PATH,$(HOST_OUT_FOLDER)/xrt.ini)
 else
-	@cp $(HOST_XRT_INI_PATH) $(HOST_OUT_FOLDER)/xrt.ini
+	@$(CP) $(call FIX_PATH,$(HOST_XRT_INI_PATH)) $(call FIX_PATH,$(HOST_OUT_FOLDER)/xrt.ini)
 endif
 ifeq ($(strip $(TARGET)), hw_emu)
 	emconfigutil --platform $(PLATFORM) --od $(HOST_OUT_FOLDER)

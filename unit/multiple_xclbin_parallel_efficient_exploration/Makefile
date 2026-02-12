@@ -27,8 +27,11 @@ EXPLORATION_FREQUENCIES = $(addsuffix MHz, $(shell for i in $$(seq $(STARTING_FR
 TARGETS := $(EXPLORATION_FREQUENCIES)
 
 .PHONY: prebuild
+include ../../MakefileCommon.mk
+
+.PHONY: prebuild
 prebuild:
-	@mkdir -p $(LOG_ROOT_FOLDER)
+	-@$(MKDIR) $(call FIX_PATH,$(LOG_ROOT_FOLDER))
 
 %MHz: prebuild
 	$(eval CURRENT_RUN_FREQUENCY := $(patsubst %MHz,%,$@))
@@ -44,8 +47,10 @@ all: $(TARGETS)
 
 clean_all:
 	@echo "Cleaning exploration"
-	@rm -rf $(LOG_ROOT_FOLDER)
-	@rm -rf $(KERNEL_BUILD_FOLDER_BASE)_*
+clean_all:
+	@echo "Cleaning exploration"
+	-@$(RMDIR) $(call FIX_PATH,$(LOG_ROOT_FOLDER))
+	-@$(RMDIR) $(call FIX_PATH,$(KERNEL_BUILD_FOLDER_BASE)_*)
 
 
 

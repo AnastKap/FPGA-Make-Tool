@@ -22,7 +22,7 @@
 #define MAT_SIZE MAT_DIM* MAT_DIM
 #define NUM_TIMES 10
 ////////////////////UTILITY FUNCTION///////////////
-void print_summary(std::string k1, std::string k2, double t1, double t2, int iterations) {
+void print_summary(const std::string& k1, const std::string& k2, double t1, double t2, int iterations) {
     double speedup = t2 / t1;
     std::cout << "|-------------------------+-------------------------|\n"
               << "| Kernel(" << iterations << " iterations)  |    Wall-Clock Time (s)  |\n"

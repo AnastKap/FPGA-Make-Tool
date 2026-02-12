@@ -110,14 +110,7 @@ int main(int argc, char** argv) {
     }
 
     /* Input buffer */
-    unsigned char* input_host = ((unsigned char*)malloc(globalbuffersize));
-    if (input_host == nullptr) {
-        printf(
-            "Error: Failed to allocate host side copy of OpenCL source "
-            "buffer of size %zu\n",
-            globalbuffersize);
-        return EXIT_FAILURE;
-    }
+    std::vector<unsigned char, aligned_allocator<unsigned char>> input_host(globalbuffersize);
 
     for (size_t i = 0; i < globalbuffersize; i++) {
         input_host[i] = i % 256;
@@ -133,20 +126,19 @@ int main(int argc, char** argv) {
      * buffer[1] is output0
      * buffer[2] is input1
      * buffer[3] is output1 */
-    cl::Buffer* buffer[num_buffers];
+    std::vector<cl::Buffer> buffer(num_buffers);
 
 #if NDDR_BANKS > 1
-
     for (int i = 0; i < ddr_banks; i++) {
-        buffer[i] = new cl::Buffer(context, CL_MEM_READ_WRITE, globalbuffersize, nullptr, &err);
+        buffer[i] = cl::Buffer(context, CL_MEM_READ_WRITE, globalbuffersize, nullptr, &err);
         if (err != CL_SUCCESS) {
-            printf("Error: Failed to allocate buffer in DDR bank %zu\n", globalbuffersize);
+            std::cout << "Error: Failed to allocate buffer in DDR bank " << globalbuffersize << std::endl;
             return EXIT_FAILURE;
         }
-    } /* End for (i < ddr_banks) */
+    }
 #else
-    OCL_CHECK(err, buffer[0] = new cl::Buffer(context, CL_MEM_READ_WRITE, globalbuffersize, nullptr, &err));
-    OCL_CHECK(err, buffer[1] = new cl::Buffer(context, CL_MEM_READ_WRITE, globalbuffersize, nullptr, &err));
+    OCL_CHECK(err, buffer[0] = cl::Buffer(context, CL_MEM_READ_WRITE, globalbuffersize, nullptr, &err));
+    OCL_CHECK(err, buffer[1] = cl::Buffer(context, CL_MEM_READ_WRITE, globalbuffersize, nullptr, &err));
 #endif
 
     /*
@@ -161,36 +153,34 @@ int main(int argc, char** argv) {
     int buffer_index = 0;
     cl_ulong num_blocks = globalbuffersize / 64;
 
-    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, *(buffer[buffer_index++])));
-    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, *(buffer[buffer_index++])));
+    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, buffer[buffer_index++]));
+    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, buffer[buffer_index++]));
 #if NDDR_BANKS == 3
-    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, *(buffer[buffer_index++])));
+    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, buffer[buffer_index++]));
 #elif NDDR_BANKS > 3
-    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, *(buffer[buffer_index++])));
-    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, *(buffer[buffer_index++])));
+    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, buffer[buffer_index++]));
+    OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, buffer[buffer_index++]));
 #endif
     OCL_CHECK(err, err = krnl_global_bandwidth.setArg(arg_index++, num_blocks));
 
     double dbytes = globalbuffersize;
     double dmbytes = dbytes / (((double)1024) * ((double)1024));
-    printf(
-        "Starting kernel to read/write %.0lf MB bytes from/to global "
-        "memory... \n",
-        dmbytes);
+    std::cout << "Starting kernel to read/write " << std::fixed << std::setprecision(0) << dmbytes 
+              << " MB bytes from/to global memory... " << std::endl;
 
     /* Write input buffer */
     /* Map input buffer for PCIe write */
     unsigned char* map_input_buffer0;
     OCL_CHECK(err,
               map_input_buffer0 = (unsigned char*)q.enqueueMapBuffer(
-                  *(buffer[0]), CL_FALSE, CL_MAP_WRITE_INVALIDATE_REGION, 0, globalbuffersize, nullptr, nullptr, &err));
+                  buffer[0], CL_FALSE, CL_MAP_WRITE_INVALIDATE_REGION, 0, globalbuffersize, nullptr, nullptr, &err));
     OCL_CHECK(err, err = q.finish());
 
     /* prepare data to be written to the device */
     for (size_t i = 0; i < globalbuffersize; i++) {
         map_input_buffer0[i] = input_host[i];
     }
-    OCL_CHECK(err, err = q.enqueueUnmapMemObject(*(buffer[0]), map_input_buffer0));
+    OCL_CHECK(err, err = q.enqueueUnmapMemObject(buffer[0], map_input_buffer0));
 
     OCL_CHECK(err, err = q.finish());
 
@@ -198,7 +188,7 @@ int main(int argc, char** argv) {
     unsigned char* map_input_buffer1;
     OCL_CHECK(err,
               map_input_buffer1 = (unsigned char*)q.enqueueMapBuffer(
-                  *(buffer[2]), CL_FALSE, CL_MAP_WRITE_INVALIDATE_REGION, 0, globalbuffersize, nullptr, nullptr, &err));
+                  buffer[2], CL_FALSE, CL_MAP_WRITE_INVALIDATE_REGION, 0, globalbuffersize, nullptr, nullptr, &err));
     OCL_CHECK(err, err = q.finish());
 
     /* Prepare data to be written to the device */
@@ -206,7 +196,7 @@ int main(int argc, char** argv) {
         map_input_buffer1[i] = input_host[i];
     }
 
-    OCL_CHECK(err, err = q.enqueueUnmapMemObject(*(buffer[2]), map_input_buffer1));
+    OCL_CHECK(err, err = q.enqueueUnmapMemObject(buffer[2], map_input_buffer1));
     OCL_CHECK(err, err = q.finish());
 #endif
 
@@ -222,7 +212,7 @@ int main(int argc, char** argv) {
 
     /* Copy results back from OpenCL buffer */
     unsigned char* map_output_buffer0;
-    OCL_CHECK(err, map_output_buffer0 = (unsigned char*)q.enqueueMapBuffer(*(buffer[1]), CL_FALSE, CL_MAP_READ, 0,
+    OCL_CHECK(err, map_output_buffer0 = (unsigned char*)q.enqueueMapBuffer(buffer[1], CL_FALSE, CL_MAP_READ, 0,
                                                                            globalbuffersize, nullptr, nullptr, &err));
     OCL_CHECK(err, err = q.finish());
 
@@ -231,22 +221,20 @@ int main(int argc, char** argv) {
     /* Check the results of output0 */
     for (size_t i = 0; i < globalbuffersize; i++) {
         if (map_output_buffer0[i] != input_host[i]) {
-            printf("ERROR : kernel failed to copy entry %zu input %i output %i\n", i, input_host[i],
-                   map_output_buffer0[i]);
+            std::cout << "ERROR : kernel failed to copy entry " << i << " input " << input_host[i] << " output " << map_output_buffer0[i] << std::endl;
             return EXIT_FAILURE;
         }
     }
 #if NDDR_BANKS == 3
     unsigned char* map_output_buffer1;
-    OCL_CHECK(err, map_output_buffer1 = (unsigned char*)q.enqueueMapBuffer(*(buffer[2]), CL_FALSE, CL_MAP_READ, 0,
+    OCL_CHECK(err, map_output_buffer1 = (unsigned char*)q.enqueueMapBuffer(buffer[2], CL_FALSE, CL_MAP_READ, 0,
                                                                            globalbuffersize, nullptr, nullptr, &err));
     OCL_CHECK(err, err = q.finish());
 
     /* Check the results of output1 */
     for (size_t i = 0; i < globalbuffersize; i++) {
         if (map_output_buffer1[i] != input_host[i]) {
-            printf("ERROR : kernel failed to copy entry %zu input %i output %i\n", i, input_host[i],
-                   map_output_buffer1[i]);
+            std::cout << "ERROR : kernel failed to copy entry " << i << " input " << input_host[i] << " output " << map_output_buffer1[i] << std::endl;
             return EXIT_FAILURE;
         }
     }
@@ -254,28 +242,20 @@ int main(int argc, char** argv) {
 
 #if NDDR_BANKS > 3
     unsigned char* map_output_buffer1;
-    OCL_CHECK(err, map_output_buffer1 = (unsigned char*)q.enqueueMapBuffer(*(buffer[3]), CL_FALSE, CL_MAP_READ, 0,
+    OCL_CHECK(err, map_output_buffer1 = (unsigned char*)q.enqueueMapBuffer(buffer[3], CL_FALSE, CL_MAP_READ, 0,
                                                                            globalbuffersize, nullptr, nullptr, &err));
     OCL_CHECK(err, err = q.finish());
 
     /* Check the results of output1 */
     for (size_t i = 0; i < globalbuffersize; i++) {
         if (map_output_buffer1[i] != input_host[i]) {
-            printf("ERROR : kernel failed to copy entry %zu input %i output %i\n", i, input_host[i],
-                   map_output_buffer1[i]);
+            std::cout << "ERROR : kernel failed to copy entry " << i << " input " << input_host[i] << " output " << map_output_buffer1[i] << std::endl;
             return EXIT_FAILURE;
         }
     }
 #endif
 
-#if NDDR_BANKS > 1
-    for (int i = 0; i < ddr_banks; i++) {
-        delete (buffer[i]);
-    }
-#else
-    delete (buffer[0]);
-    delete (buffer[1]);
-#endif
+
 
     /* Profiling information */
     double dnsduration = ((double)nsduration);
@@ -284,10 +264,10 @@ int main(int argc, char** argv) {
     double bpersec = (dbytes / dsduration);
     double gbpersec = bpersec / ((double)1024 * 1024 * 1024) * num_buffers;
 
-    printf("Kernel completed read/write %.0lf MB bytes from/to global memory.\n", dmbytes);
-    printf("Execution time = %f (sec) \n", dsduration);
-    printf("Concurrent Read and Write Throughput = %f (GB/sec) \n", gbpersec);
-
-    printf("TEST PASSED\n");
+    std::cout << "Kernel completed read/write " << std::fixed << std::setprecision(0) << dmbytes 
+              << " MB bytes from/to global memory." << std::endl;
+    std::cout << "Execution time = " << std::fixed << std::setprecision(6) << dsduration << " (sec)" << std::endl;
+    std::cout << "Concurrent Read and Write Throughput = " << std::fixed << std::setprecision(6) << gbpersec << " (GB/sec)" << std::endl;
+    std::cout << "TEST PASSED" << std::endl;
     return EXIT_SUCCESS;
 }
