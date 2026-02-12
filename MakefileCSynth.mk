@@ -47,14 +47,14 @@ prebuild_csynth:
 
 .PHONY: prebuild_kernel
 prebuild_kernel:
-	$(ECHO) "$(GREEN_COLOR)CSynth for xo $(KERNEL_XO_TARGET) started. Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)CSynth for xo $(KERNEL_XO_TARGET) started. Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)
 	@echo "Kernel name: $(KERNEL_TOP_FUNCTION_NAME)"
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
 	@echo "Kernel sources: $(KERNEL_SOURCES_EXPANDED)"
 	-@$(MKDIR) $(call FIX_PATH,$(dir $(XO_LOG_OUTPUT)))
 
-	$(ECHO) "$(GREEN_COLOR)---- Building kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)---- Building kernel $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)
 ifneq ($(strip $(KERNEL_PREBUILD_STEPS)),)
 	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(KERNEL_PREBUILD_STEPS) 2>&1
 endif
@@ -62,7 +62,7 @@ endif
 
 .PHONY: postbuild_kernel
 postbuild_kernel:
-	$(ECHO) "$(PINK_COLOR)---- Kernel Built $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)"
+	$(ECHO) $(PINK_COLOR)---- Kernel Built $(KERNEL_TOP_FUNCTION_NAME) ----$(DEFAULT_COLOR)
 
 
 .PHONY: build_csynth_single

@@ -59,7 +59,7 @@ endif
 
 .PHONY: prebuild_xclbin
 prebuild_xclbin:
-	$(ECHO) "$(GREEN_COLOR)Xclbin for xo $@ started. Makefile output at $(XCLBIN_LOG_OUTPUT)$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)Xclbin for xo $@ started. Makefile output at $(XCLBIN_LOG_OUTPUT)$(DEFAULT_COLOR)
 	@echo "Xclbin config file: $(CONFIG_FILE)"
 	@echo "Xclbin frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	-@$(MKDIR) $(call FIX_PATH,$(dir $(XCLBIN_LOG_OUTPUT)))
@@ -70,7 +70,7 @@ endif
 
 .PHONY: postbuild_xclbin
 postbuild_xclbin:
-	$(ECHO) "$(PINK_COLOR)---- Xclbin Built at $(KERNEL_XCLBIN) ----$(DEFAULT_COLOR)"
+	$(ECHO) $(PINK_COLOR)---- Xclbin Built at $(KERNEL_XCLBIN) ----$(DEFAULT_COLOR)
 
 build_xclbin: prebuild_xclbin $(KERNEL_XCLBIN) postbuild_xclbin
 

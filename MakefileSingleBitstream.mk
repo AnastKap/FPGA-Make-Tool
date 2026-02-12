@@ -7,9 +7,15 @@ CUR_DIR := $(patsubst %/,%,$(dir $(MK_PATH)))
 BUILD_SYSTEM_ABS_PATH := $(CUR_DIR)
 
 # Check Vitis Version safely
-VITIS_VERSION := $(shell v++ --version 2> $(NULL) || echo "Vitis not found")
-
 include $(BUILD_SYSTEM_ABS_PATH)/MakefileCommon.mk
+
+# Check Vitis Version safely
+Vitis_Version_Check := $(shell v++ --version 2> $(NULL))
+ifeq ($(strip $(Vitis_Version_Check)),)
+    VITIS_VERSION := Vitis not found
+else
+    VITIS_VERSION := $(Vitis_Version_Check)
+endif
 
 AR = ar
 
@@ -57,7 +63,7 @@ include $(BUILD_SYSTEM_ABS_PATH)/MakefileXclbin.mk
 all: check-platform check-device check-vitis $(BUILD_DIR)/vadd.xclbin emconfig
 
 prebuild:
-	$(ECHO) "$(GREEN_COLOR)---- Tools used ----$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)---- Tools used ----$(DEFAULT_COLOR)
 	@echo "Vitis version: $(VITIS_VERSION)"
 	@echo "Build folder: $(BUILD_SYSTEM_BUILD_FOLDER)"
 	-@$(MKDIR) $(call FIX_PATH,$(BUILD_SYSTEM_BUILD_FOLDER))
@@ -87,7 +93,7 @@ prebuild_host:
 	-@$(MKDIR) $(call FIX_PATH,$(HOST_OBJ_FOLDER))
 	$(foreach cpp_file,$(HOST_SOURCES),$(shell $(MKDIR) $(call FIX_PATH,$(HOST_OBJ_FOLDER)/$(dir $(cpp_file)))))
 	
-	$(ECHO) "$(GREEN_COLOR)---- Building host ----$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)---- Building host ----$(DEFAULT_COLOR)
 ifneq ($(strip $(HOST_PREBUILD_STEPS)),)
 	make -f $(firstword $(MAKEFILE_LIST)) $(HOST_PREBUILD_STEPS)
 endif
@@ -98,7 +104,7 @@ build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_APP_NAME)
 else
 build_host: prebuild_host $(HOST_OUT_FOLDER)/$(HOST_STATIC_LIB_NAME)
 endif	
-	$(ECHO) "$(PINK_COLOR)---- Host built ----$(DEFAULT_COLOR)"
+	$(ECHO) $(PINK_COLOR)---- Host built ----$(DEFAULT_COLOR)
 ifeq ($(strip $(HOST_XRT_INI_PATH)),)
 	@$(CP) xrt.ini $(call FIX_PATH,$(HOST_OUT_FOLDER)/xrt.ini)
 else
@@ -119,15 +125,15 @@ xclbin: build
 
 ############################## Building the host application ##############################
 $(HOST_OBJ_FOLDER)/%.o: %.cpp
-	$(ECHO) "$(GREEN_COLOR)Compiling $<...$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)Compiling $<...$(DEFAULT_COLOR)
 	g++ -c -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
 
 $(HOST_OUT_FOLDER)/$(HOST_APP_NAME): $(HOST_OBJS)
-	$(ECHO) "$(GREEN_COLOR)Linking object files to final host application...$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)Linking object files to final host application...$(DEFAULT_COLOR)
 	g++ -o $@ $^ $(LDFLAGS)
 
 $(HOST_OUT_FOLDER)/$(HOST_STATIC_LIB_NAME): $(HOST_OBJS)
-	$(ECHO) "$(GREEN_COLOR)Linking object files to final host static library...$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)Linking object files to final host static library...$(DEFAULT_COLOR)
 	$(AR) rcs $@ $^
 
 
@@ -139,10 +145,10 @@ $(EMCONFIG_DIR)/emconfig.json:
 ############################## Cleaning Rules ##############################
 # Cleaning stuff
 clean_host:
-	-$(RMDIR) $(HOST_OUT_FOLDER)
+	-$(RMDIR) $(call FIX_PATH,$(HOST_OUT_FOLDER))
 
 clean:
-	-$(RMDIR) $(KERNEL_BUILD_FOLDER)/$(TARGET) .Xil
+	-$(RMDIR) $(call FIX_PATH,$(BUILD_FOLDER)) .Xil
 	-$(RMDIR) .Xil
 
 

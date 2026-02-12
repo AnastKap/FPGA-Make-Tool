@@ -36,9 +36,9 @@ prebuild_rtl_to_xo_all:
 
 .PHONY: prebuild_rtl_to_xo
 prebuild_rtl_to_xo:
-	$(ECHO) "$(GREEN_COLOR)---- Packaging RTL kernel $(KERNEL_TOP_MODULE_NAME) ----$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)---- Packaging RTL kernel $(KERNEL_TOP_MODULE_NAME) ----$(DEFAULT_COLOR)
 	
-	$(ECHO) "$(GREEN_COLOR)RTL to xo $(RTL_TO_XO_TARGET) started. Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)"
+	$(ECHO) $(GREEN_COLOR)RTL to xo $(RTL_TO_XO_TARGET) started. Makefile output at $(XO_LOG_OUTPUT)$(DEFAULT_COLOR)
 	@echo "Kernel top module name: $(KERNEL_TOP_MODULE_NAME)"
 	@echo "Kernel frequency: $(KERNEL_FREQUENCY_MHz) MHz"
 	@echo "Kernel prebuild steps: $(KERNEL_PREBUILD_STEPS)"
@@ -49,7 +49,7 @@ prebuild_rtl_to_xo:
 
 .PHONY: postbuild_rtl_to_xo
 postbuild_rtl_to_xo:
-	$(ECHO) "$(PINK_COLOR)---- RTL packaged to XO $(KERNEL_TOP_MODULE_NAME) ----$(DEFAULT_COLOR)"
+	$(ECHO) $(PINK_COLOR)---- RTL packaged to XO $(KERNEL_TOP_MODULE_NAME) ----$(DEFAULT_COLOR)
 
 
 .PHONY: build_rtl_to_xo_single
