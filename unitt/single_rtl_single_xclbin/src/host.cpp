@@ -104,17 +104,17 @@ int main(int argc, char** argv) {
     // OPENCL HOST CODE AREA END
 
     // Compare the results of the Device to the simulation
-    int match = 0;
+    bool match = true;
     for (int i = 0; i < size; i++) {
         if (source_hw_results[i] != source_sw_results[i]) {
             std::cout << "Error: Result mismatch" << std::endl;
             std::cout << "i = " << i << " Software result = " << source_sw_results[i]
                       << " Device result = " << source_hw_results[i] << std::endl;
-            match = 1;
+            match = false;
             break;
         }
     }
 
-    std::cout << "TEST " << (match ? "FAILED" : "PASSED") << std::endl;
-    return (match ? EXIT_FAILURE : EXIT_SUCCESS);
+    std::cout << "TEST " << (match ? "PASSED" : "FAILED") << std::endl;
+    return (match ? EXIT_SUCCESS : EXIT_FAILURE);
 }

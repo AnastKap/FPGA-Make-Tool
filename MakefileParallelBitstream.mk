@@ -1,4 +1,6 @@
-include $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST)))/MakefileCommon.mk)
+MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+BUILD_SYSTEM_DIR := $(patsubst %/,%,$(dir $(MK_PATH)))
+include $(BUILD_SYSTEM_DIR)/MakefileCommon.mk
 
 include $(GENERAL_SETTINGS_MAKEFILE)
 export
@@ -10,7 +12,7 @@ export
 ##################################################
 ##################################################
 
-SECTION_DASHES = $(shell echo "----------------------------------------")
+# SECTION_DASHES is defined in MakefileCommon.mk
 
 
 
@@ -35,7 +37,7 @@ build_job: build_job_user_impl
 ##################################################
 ##################################################
 
-IN_BATCH_JOB_TARGETS = $(foreach i,$(shell seq 0 $$(($(PARALLEL_JOBS_IN_BATCH)-1))),job_in_batch_$(i))
+IN_BATCH_JOB_TARGETS = $(foreach i,$(shell $(call SEQ_0_N_MINUS_1,$(PARALLEL_JOBS_IN_BATCH))),job_in_batch_$(i))
 
 job_in_batch_%:
 	$(eval JOB_IN_BATCH_ID := $(patsubst job_in_batch_%,%,$@))
@@ -57,11 +59,11 @@ build_batch_all: post_batch_completion
 ##################################################
 ##################################################
 
-BATCH_TARGETS = $(foreach i,$(shell seq 1 $(NUMBER_OF_BATCHES)),build_batch_$(i))
+BATCH_TARGETS = $(foreach i,$(shell $(call SEQ_1_TO_N,$(NUMBER_OF_BATCHES))),build_batch_$(i))
 
 .PHONY: build_system_init
 build_system_init:
-	@rm -rf $(LOG_ROOT_FOLDER)
+	-@$(RMDIR) $(call FIX_PATH,$(LOG_ROOT_FOLDER))
 ifneq ($(PRE_PARALLEL_STEP),)
 	@$(MAKE) -f $(BUILD_SYSTEM_ABS_ROOT_DIR)/MakefileParallelBitstream.mk $(PRE_PARALLEL_STEP)
 endif 
@@ -69,11 +71,11 @@ endif
 build_batch_%:
 	$(eval BATCH_ID := $(patsubst build_batch_%,%,$@))
 	@echo $(GREEN_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
-	@echo "$(GREEN_COLOR)Building batch $(BATCH_ID)$(DEFAULT_COLOR)"
+	@echo $(GREEN_COLOR)Building batch $(BATCH_ID)$(DEFAULT_COLOR)
 	@echo $(GREEN_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
 	@$(MAKE) -f $(BUILD_SYSTEM_ABS_ROOT_DIR)/MakefileParallelBitstream.mk BATCH_ID=$(BATCH_ID) -j$(PARALLEL_JOBS_IN_BATCH) build_batch_all
 	@echo $(PINK_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
-	@echo "$(PINK_COLOR)Batch $(BATCH_ID) built$(DEFAULT_COLOR)"
+	@echo $(PINK_COLOR)Batch $(BATCH_ID) built$(DEFAULT_COLOR)
 	@echo $(PINK_COLOR)$(SECTION_DASHES)$(DEFAULT_COLOR)
 
 .PHONY: build_system_all

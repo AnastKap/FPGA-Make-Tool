@@ -5,5 +5,5 @@ KERNEL_BUILD_FOLDER_BASE ?= .buildExplorationFPGA_
 
 
 post_batch_build:
-	python3 $(CUR_DIR)/append_dataset.py
-	@rm -rf $(CUR_DIR)/$(KERNEL_BUILD_FOLDER_BASE)*
+	python $(TEST_DIR)/append_dataset.py
+	-@$(RMDIR) $(call FIX_PATH,$(TEST_DIR)/$(KERNEL_BUILD_FOLDER_BASE)*)

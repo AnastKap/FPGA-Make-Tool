@@ -10,26 +10,30 @@ ifeq ($(DEBUG), yes)
 VPP_LDFLAGS += --dk list_ports
 endif
 
-############################## Setting up Project Variables ##############################
-# Points to top directory of Git repository
+include $(dir $(lastword $(MAKEFILE_LIST)))/MakefileCommon.mk
+
+
 MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-COMMON_REPO ?= $(shell bash -c 'export MK_PATH=$(MK_PATH); echo $${MK_PATH%host_xrt/hello_world_xrt/*}')
-PWD = $(shell readlink -f .)
-XF_PROJ_ROOT = $(shell readlink -f $(COMMON_REPO))
+COMMON_REPO ?= $(shell python -c "import os; print(os.path.abspath('${MK_PATH}/../../..').replace(os.sep, '/'))")
+PWD = $(shell python -c "import os; print(os.getcwd().replace(os.sep, '/'))")
+XF_PROJ_ROOT = $(shell python -c "import os; print(os.path.abspath('${COMMON_REPO}').replace(os.sep, '/'))")
 
 #Check OS and setting env for xrt c++ api
 GXX_EXTRA_FLAGS := 
-OSDIST = $(shell lsb_release -i |awk -F: '{print tolower($$2)}' | tr -d ' 	' )
-OSREL = $(shell lsb_release -r |awk -F: '{print tolower($$2)}' |tr -d ' 	')
-# for centos and redhat
-ifneq ($(findstring centos,$(OSDIST)),)
-ifeq (7,$(shell echo $(OSREL) | awk -F. '{print tolower($$1)}' ))
-GXX_EXTRA_FLAGS := -D_GLIBCXX_USE_CXX11_ABI=0
-endif
-else ifneq ($(findstring redhat,$(OSDIST)),)
-ifeq (7,$(shell echo $(OSREL) | awk -F. '{print tolower($$1)}' ))
-GXX_EXTRA_FLAGS := -D_GLIBCXX_USE_CXX11_ABI=0
-endif
+# Only run lsb_release on Linux (Windows doesn't have it)
+ifneq ($(OS),Windows_NT)
+    OSDIST = $(shell lsb_release -i 2>/dev/null | awk -F: '{print tolower($$2)}' | tr -d ' 	' )
+    OSREL = $(shell lsb_release -r 2>/dev/null | awk -F: '{print tolower($$2)}' | tr -d ' 	')
+    # for centos and redhat
+    ifneq ($(findstring centos,$(OSDIST)),)
+        ifeq (7,$(shell echo $(OSREL) | awk -F. '{print tolower($$1)}' ))
+            GXX_EXTRA_FLAGS := -D_GLIBCXX_USE_CXX11_ABI=0
+        endif
+    else ifneq ($(findstring redhat,$(OSDIST)),)
+        ifeq (7,$(shell echo $(OSREL) | awk -F. '{print tolower($$1)}' ))
+            GXX_EXTRA_FLAGS := -D_GLIBCXX_USE_CXX11_ABI=0
+        endif
+    endif
 endif
 #Setting PLATFORM 
 ifeq ($(PLATFORM),)
@@ -52,7 +56,11 @@ ifndef XILINX_XRT
 endif
 
 gen_run_app:
-	rm -rf run_app.sh
+	-$(RM) run_app.sh run_app.bat
+ifeq ($(OS),Windows_NT)
+	$(ECHO) set PATH=%PATH%;%XILINX_XRT%/bin > run_app.bat
+	$(ECHO) $(EXECUTABLE)$(EXT) -x $(PROJECT_NAME).xclbin >> run_app.bat
+else
 	$(ECHO) 'export LD_LIBRARY_PATH=/mnt:/tmp:$$LD_LIBRARY_PATH' >> run_app.sh
 	$(ECHO) 'export PATH=$$PATH:/sbin' >> run_app.sh
 	$(ECHO) 'export XILINX_XRT=/usr' >> run_app.sh
@@ -60,12 +68,13 @@ ifeq ($(TARGET),$(filter $(TARGET),sw_emu hw_emu))
 	$(ECHO) 'export XILINX_VITIS=$$PWD' >> run_app.sh
 	$(ECHO) 'export XCL_EMULATION_MODE=$(TARGET)' >> run_app.sh
 endif
-	$(ECHO) '$(EXECUTABLE) -x vadd.xclbin' >> run_app.sh
+	$(ECHO) '$(EXECUTABLE) -x $(PROJECT_NAME).xclbin' >> run_app.sh
 	$(ECHO) 'return_code=$$?' >> run_app.sh
 	$(ECHO) 'if [ $$return_code -ne 0 ]; then' >> run_app.sh
 	$(ECHO) 'echo "ERROR: host run failed, RC=$$return_code"' >> run_app.sh
 	$(ECHO) 'fi' >> run_app.sh
 	$(ECHO) 'echo "INFO: host run completed."' >> run_app.sh
+endif
 check-platform:
 ifndef PLATFORM
 	$(error PLATFORM not set. Please set the PLATFORM properly and rerun. Run "make help" for more details.)
