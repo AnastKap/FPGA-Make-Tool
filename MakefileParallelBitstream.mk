@@ -1,6 +1,6 @@
 MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-CUR_DIR := $(patsubst %/,%,$(dir $(MK_PATH)))
-include $(CUR_DIR)/MakefileCommon.mk
+BUILD_SYSTEM_DIR := $(patsubst %/,%,$(dir $(MK_PATH)))
+include $(BUILD_SYSTEM_DIR)/MakefileCommon.mk
 
 include $(GENERAL_SETTINGS_MAKEFILE)
 export
@@ -12,7 +12,7 @@ export
 ##################################################
 ##################################################
 
-SECTION_DASHES = $(shell python -c "print('-'*40)")
+# SECTION_DASHES is defined in MakefileCommon.mk
 
 
 
@@ -37,7 +37,7 @@ build_job: build_job_user_impl
 ##################################################
 ##################################################
 
-IN_BATCH_JOB_TARGETS = $(foreach i,$(shell python -c "print(' '.join(map(str, range(0, $(PARALLEL_JOBS_IN_BATCH)))))"),job_in_batch_$(i))
+IN_BATCH_JOB_TARGETS = $(foreach i,$(shell $(call SEQ_0_N_MINUS_1,$(PARALLEL_JOBS_IN_BATCH))),job_in_batch_$(i))
 
 job_in_batch_%:
 	$(eval JOB_IN_BATCH_ID := $(patsubst job_in_batch_%,%,$@))
@@ -59,7 +59,7 @@ build_batch_all: post_batch_completion
 ##################################################
 ##################################################
 
-BATCH_TARGETS = $(foreach i,$(shell python -c "print(' '.join(map(str, range(1, $(NUMBER_OF_BATCHES)+1))))"),build_batch_$(i))
+BATCH_TARGETS = $(foreach i,$(shell $(call SEQ_1_TO_N,$(NUMBER_OF_BATCHES))),build_batch_$(i))
 
 .PHONY: build_system_init
 build_system_init:

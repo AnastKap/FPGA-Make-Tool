@@ -14,15 +14,17 @@ TARGET ?= hw
 
 
 # Run settings
-CUR_DIR ?= $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+# Run settings
+MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+TEST_DIR := $(patsubst %/,%,$(dir $(MK_PATH)))
 
-LOG_ROOT_FOLDER ?= $(CUR_DIR)/.logs
+LOG_ROOT_FOLDER ?= $(TEST_DIR)/.logs
 
 KERNEL_TOP_FUNCTION_NAME = FPGA_Diffusion_Convection_kernel
 #KERNEL_BUILD_FOLDER_BASE ?= $(CUR_DIR)/.buildExplorationFPGA
-ENDING_FREQUENCY = $(shell echo $$(($(STARTING_FREQUENCY) + ($(NUMBER_OF_FREQ_STEPS) - 1) \* $(FREQUENCY_STEP))))
-EXPLORATION_FREQUENCIES = $(addsuffix MHz, $(shell for i in $$(seq $(STARTING_FREQUENCY) \
-								$(FREQUENCY_STEP) $(ENDING_FREQUENCY)); do echo $$i; done))
+ENDING_FREQUENCY = $(shell $(call CALC_EXPRESSION, $(STARTING_FREQUENCY) + ($(NUMBER_OF_FREQ_STEPS) - 1) * $(FREQUENCY_STEP)))
+EXPLORATION_FREQUENCIES = $(addsuffix MHz, $(shell $(call SEQ_START_STEP_END, $(STARTING_FREQUENCY), $(FREQUENCY_STEP), $(ENDING_FREQUENCY))))
 
 TARGETS := $(EXPLORATION_FREQUENCIES)
 
@@ -47,8 +49,6 @@ all: $(TARGETS)
 
 clean_all:
 	@echo "Cleaning exploration"
-clean_all:
-	@echo "Cleaning exploration"
 	-@$(RMDIR) $(call FIX_PATH,$(LOG_ROOT_FOLDER))
 	-@$(RMDIR) $(call FIX_PATH,$(KERNEL_BUILD_FOLDER_BASE)_*)
 
@@ -60,10 +60,10 @@ clean_all:
 
 
 
-GENERAL_SETTINGS_MAKEFILE = $(abspath $(CUR_DIR)/MakefileGeneralSettings.mk)
-BATCH_SETTINGS_MAKEFILE = $(abspath $(CUR_DIR)/MakefileJobInBatchSettings.mk)
+GENERAL_SETTINGS_MAKEFILE = $(abspath $(TEST_DIR)/MakefileGeneralSettings.mk)
+BATCH_SETTINGS_MAKEFILE = $(abspath $(TEST_DIR)/MakefileJobInBatchSettings.mk)
 POST_BATCH_TARGET = post_batch_build
-BUILD_SYSTEM_LOG_ROOT_FOLDER = $(CUR_DIR)/.build_system_logs
-BUILD_SYSTEM_ABS_ROOT_DIR = $(abspath $(CUR_DIR)/../..)
+BUILD_SYSTEM_LOG_ROOT_FOLDER = $(TEST_DIR)/.build_system_logs
+BUILD_SYSTEM_ABS_ROOT_DIR = $(abspath $(TEST_DIR)/../..)
 
 include $(BUILD_SYSTEM_ABS_ROOT_DIR)/MakefileParallelBitstream.mk
